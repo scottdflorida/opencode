@@ -101,19 +101,26 @@ export type ProjectCopyError = {
 export const isProjectCopyError = (value: unknown): value is ProjectCopyError =>
   typeof value === "object" && value !== null && "name" in value && value["name"] === "ProjectCopyError"
 
-export type RouteProfileNotFoundError = {
-  readonly name: "RouteProfileNotFoundError"
-  readonly data: { readonly profile: string }
-}
-export const isRouteProfileNotFoundError = (value: unknown): value is RouteProfileNotFoundError =>
-  typeof value === "object" && value !== null && "name" in value && value["name"] === "RouteProfileNotFoundError"
-
 export type OrchestrationNotFoundError = {
   readonly name: "OrchestrationNotFoundError"
   readonly data: { readonly resource: string; readonly id: string }
 }
 export const isOrchestrationNotFoundError = (value: unknown): value is OrchestrationNotFoundError =>
   typeof value === "object" && value !== null && "name" in value && value["name"] === "OrchestrationNotFoundError"
+
+export type OrchestrationOperationError = {
+  readonly name: "OrchestrationOperationError"
+  readonly data: { readonly operation: string; readonly message: string }
+}
+export const isOrchestrationOperationError = (value: unknown): value is OrchestrationOperationError =>
+  typeof value === "object" && value !== null && "name" in value && value["name"] === "OrchestrationOperationError"
+
+export type RouteProfileNotFoundError = {
+  readonly name: "RouteProfileNotFoundError"
+  readonly data: { readonly profile: string }
+}
+export const isRouteProfileNotFoundError = (value: unknown): value is RouteProfileNotFoundError =>
+  typeof value === "object" && value !== null && "name" in value && value["name"] === "RouteProfileNotFoundError"
 
 export type HealthGetOutput = { readonly healthy: true }
 
@@ -2842,6 +2849,146 @@ export type ServerOrchestrationListOutput = {
   }>
 }
 
+export type ServerOrchestrationCreateInput = {
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+  readonly objective: { readonly objective: string }["objective"]
+}
+
+export type ServerOrchestrationCreateOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
 export type ServerOrchestrationCapacityInput = {
   readonly location?: {
     readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
@@ -2886,6 +3033,1037 @@ export type ServerOrchestrationCapacityOutput = {
       readonly resetsAt?: number
     }>
     readonly diagnostic?: string
+  }
+}
+
+export type ServerOrchestrationAddTaskInput = {
+  readonly runID: { readonly runID: string }["runID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+  readonly title: {
+    readonly title: string
+    readonly description?: string | null
+    readonly routeProfile?: string | null
+    readonly checks?: ReadonlyArray<{
+      readonly name: string
+      readonly command: string
+      readonly baseline?: boolean
+      readonly timeoutSeconds?: number
+    }> | null
+  }["title"]
+  readonly description?: {
+    readonly title: string
+    readonly description?: string | null
+    readonly routeProfile?: string | null
+    readonly checks?: ReadonlyArray<{
+      readonly name: string
+      readonly command: string
+      readonly baseline?: boolean
+      readonly timeoutSeconds?: number
+    }> | null
+  }["description"]
+  readonly routeProfile?: {
+    readonly title: string
+    readonly description?: string | null
+    readonly routeProfile?: string | null
+    readonly checks?: ReadonlyArray<{
+      readonly name: string
+      readonly command: string
+      readonly baseline?: boolean
+      readonly timeoutSeconds?: number
+    }> | null
+  }["routeProfile"]
+  readonly checks?: {
+    readonly title: string
+    readonly description?: string | null
+    readonly routeProfile?: string | null
+    readonly checks?: ReadonlyArray<{
+      readonly name: string
+      readonly command: string
+      readonly baseline?: boolean
+      readonly timeoutSeconds?: number
+    }> | null
+  }["checks"]
+}
+
+export type ServerOrchestrationAddTaskOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationAddDependencyInput = {
+  readonly runID: { readonly runID: string }["runID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+  readonly taskID: { readonly taskID: string; readonly dependsOnTaskID: string }["taskID"]
+  readonly dependsOnTaskID: { readonly taskID: string; readonly dependsOnTaskID: string }["dependsOnTaskID"]
+}
+
+export type ServerOrchestrationAddDependencyOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationStartInput = {
+  readonly runID: { readonly runID: string }["runID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+}
+
+export type ServerOrchestrationStartOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationCancelInput = {
+  readonly runID: { readonly runID: string }["runID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+}
+
+export type ServerOrchestrationCancelOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationAcceptInput = {
+  readonly runID: { readonly runID: string; readonly taskID: string }["runID"]
+  readonly taskID: { readonly runID: string; readonly taskID: string }["taskID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+  readonly note?: { readonly note?: string | undefined }["note"]
+}
+
+export type ServerOrchestrationAcceptOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationRejectInput = {
+  readonly runID: { readonly runID: string; readonly taskID: string }["runID"]
+  readonly taskID: { readonly runID: string; readonly taskID: string }["taskID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+  readonly note?: { readonly note?: string | undefined }["note"]
+}
+
+export type ServerOrchestrationRejectOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
+  }
+}
+
+export type ServerOrchestrationRetryInput = {
+  readonly runID: { readonly runID: string; readonly taskID: string }["runID"]
+  readonly taskID: { readonly runID: string; readonly taskID: string }["taskID"]
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined; readonly workspace?: string | undefined } | undefined
+  }["location"]
+}
+
+export type ServerOrchestrationRetryOutput = {
+  readonly location: {
+    readonly directory: string
+    readonly workspaceID?: string
+    readonly project: { readonly id: string; readonly directory: string }
+  }
+  readonly data: {
+    readonly run: {
+      readonly id: string
+      readonly projectID: string
+      readonly objective: string
+      readonly status: "draft" | "active" | "suspended" | "completed" | "cancelled"
+      readonly retryAt?: number
+      readonly time: { readonly created: number; readonly updated: number }
+    }
+    readonly tasks: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly title: string
+      readonly description?: string
+      readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
+      readonly status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+      readonly time: { readonly created: number; readonly updated: number }
+    }>
+    readonly dependencies: ReadonlyArray<{
+      readonly runID: string
+      readonly taskID: string
+      readonly dependsOnTaskID: string
+    }>
+    readonly attempts: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      readonly candidate?:
+        | {
+            readonly id: string
+            readonly type: "direct"
+            readonly providerID: string
+            readonly modelID: string
+            readonly variant?: string
+          }
+        | {
+            readonly id: string
+            readonly type: "harness"
+            readonly harnessID: string
+            readonly modelID: string
+            readonly effort?: string
+          }
+      readonly sessionID?: string
+      readonly location?: { readonly directory: string; readonly workspaceID?: string }
+      readonly time: { readonly created: number; readonly updated: number; readonly completed?: number }
+    }>
+    readonly routeDecisions: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID?: string
+      readonly resolution: {
+        readonly status: "selected" | "waiting" | "failed"
+        readonly profile: string
+        readonly selected?:
+          | {
+              readonly id: string
+              readonly type: "direct"
+              readonly providerID: string
+              readonly modelID: string
+              readonly variant?: string
+            }
+          | {
+              readonly id: string
+              readonly type: "harness"
+              readonly harnessID: string
+              readonly modelID: string
+              readonly effort?: string
+            }
+        readonly rejected: ReadonlyArray<{
+          readonly candidateID: string
+          readonly code:
+            | "disabled"
+            | "provider_unavailable"
+            | "capacity_unknown"
+            | "capacity_stale"
+            | "capacity_below_threshold"
+          readonly message: string
+          readonly meter?: string
+          readonly remaining?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly required?: number | "Infinity" | "-Infinity" | "NaN"
+          readonly retryAt?: number
+        }>
+        readonly capacityCapturedAt: number
+        readonly retryAt?: number
+      }
+      readonly time: number
+    }>
+    readonly evaluations: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly kind: string
+      readonly status: "passed" | "failed" | "indeterminate"
+      readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
+      readonly time: number
+    }>
   }
 }
 
@@ -3009,6 +4187,12 @@ export type ServerOrchestrationGetOutput = {
       readonly title: string
       readonly description?: string
       readonly routeProfile?: string
+      readonly checks: ReadonlyArray<{
+        readonly name: string
+        readonly command: string
+        readonly baseline?: boolean
+        readonly timeoutSeconds?: number
+      }>
       readonly status:
         | "draft"
         | "ready"
@@ -3101,6 +4285,15 @@ export type ServerOrchestrationGetOutput = {
       readonly kind: string
       readonly status: "passed" | "failed" | "indeterminate"
       readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly reviews: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly decision: "accepted" | "rejected"
+      readonly note?: string
       readonly time: number
     }>
   }

@@ -131,6 +131,20 @@ export default {
         );
       `)
       yield* tx.run(`
+        CREATE TABLE \`orchestration_review\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`task_id\` text NOT NULL,
+          \`attempt_id\` text NOT NULL,
+          \`decision\` text NOT NULL,
+          \`note\` text,
+          \`time_created\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_review_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_review_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_review_attempt_id_orchestration_attempt_id_fk\` FOREIGN KEY (\`attempt_id\`) REFERENCES \`orchestration_attempt\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
         CREATE TABLE \`orchestration_route_decision\` (
           \`id\` text PRIMARY KEY,
           \`run_id\` text NOT NULL,
@@ -162,6 +176,7 @@ export default {
           \`title\` text NOT NULL,
           \`description\` text,
           \`route_profile\` text,
+          \`checks\` text DEFAULT '[]' NOT NULL,
           \`status\` text NOT NULL,
           \`time_created\` integer NOT NULL,
           \`time_updated\` integer NOT NULL,
@@ -331,6 +346,9 @@ export default {
       )
       yield* tx.run(
         `CREATE INDEX \`orchestration_evaluation_attempt_created_idx\` ON \`orchestration_evaluation\` (\`attempt_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_review_attempt_created_idx\` ON \`orchestration_review\` (\`attempt_id\`,\`time_created\`);`,
       )
       yield* tx.run(
         `CREATE INDEX \`orchestration_route_decision_task_created_idx\` ON \`orchestration_route_decision\` (\`task_id\`,\`time_created\`);`,

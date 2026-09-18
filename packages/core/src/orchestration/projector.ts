@@ -11,6 +11,7 @@ import {
   OrchestrationDependencyTable,
   OrchestrationEvaluationTable,
   OrchestrationRouteDecisionTable,
+  OrchestrationReviewTable,
   OrchestrationRunTable,
   OrchestrationTaskTable,
 } from "./sql"
@@ -59,6 +60,7 @@ const layer = Layer.effectDiscard(
           title: event.data.title,
           description: event.data.description,
           route_profile: event.data.routeProfile,
+          checks: event.data.checks ?? [],
           status: "draft",
           time_created: timestamp,
           time_updated: timestamp,
@@ -109,6 +111,20 @@ const layer = Layer.effectDiscard(
         .pipe(Effect.orDie, Effect.asVoid)
     })
 
+    yield* events.project(Orchestration.AttemptPrepared, (event) =>
+      db
+        .update(OrchestrationAttemptTable)
+        .set({
+          session_id: event.data.sessionID,
+          directory: event.data.location.directory,
+          workspace_id: event.data.location.workspaceID,
+          time_updated: DateTime.toEpochMillis(event.data.timestamp),
+        })
+        .where(eq(OrchestrationAttemptTable.id, event.data.attemptID))
+        .run()
+        .pipe(Effect.orDie, Effect.asVoid),
+    )
+
     yield* events.project(Orchestration.AttemptStatusChanged, (event) =>
       db
         .update(OrchestrationAttemptTable)
@@ -148,6 +164,22 @@ const layer = Layer.effectDiscard(
           kind: event.data.kind,
           status: event.data.status,
           evidence: event.data.evidence,
+          time_created: DateTime.toEpochMillis(event.data.timestamp),
+        })
+        .run()
+        .pipe(Effect.orDie, Effect.asVoid),
+    )
+
+    yield* events.project(Orchestration.ReviewRecorded, (event) =>
+      db
+        .insert(OrchestrationReviewTable)
+        .values({
+          id: event.data.reviewID,
+          run_id: event.data.runID,
+          task_id: event.data.taskID,
+          attempt_id: event.data.attemptID,
+          decision: event.data.decision,
+          note: event.data.note,
           time_created: DateTime.toEpochMillis(event.data.timestamp),
         })
         .run()

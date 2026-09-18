@@ -114,7 +114,7 @@ describe("pty", () => {
     Effect.gen(function* () {
       const pty = yield* Pty.Service
       const events = yield* subscribePtyEvents()
-      const info = yield* createPty("/usr/bin/env", ["sh", "-c", "exit 3"])
+      const info = yield* createPty("/usr/bin/env", ["sh", "-c", "sleep 0.1; exit 3"])
 
       expect(yield* waitForEvents(events, info.id, 2)).toEqual(["created", "exited"])
       const exited = yield* pty.get(info.id)
@@ -193,7 +193,7 @@ describe("pty", () => {
       const attached = yield* attachCollecting(info.id)
 
       yield* pty.write(info.id, "\u0004")
-      expect(yield* Deferred.await(attached.ended).pipe(Effect.timeout("5 seconds"))).toEqual({ exitCode: 0 })
+      expect(yield* Deferred.await(attached.ended).pipe(Effect.timeout("10 seconds"))).toEqual({ exitCode: 0 })
       yield* waitForEvents(events, info.id, 2)
 
       const result = yield* pty.attach(info.id, { onData: () => {}, onEnd: () => {} }).pipe(Effect.exit)

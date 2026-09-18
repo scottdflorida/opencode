@@ -57,19 +57,37 @@ import { SettingsProvider, useSettings } from "@/context/settings"
 import { TabsProvider, useTabs, type DraftTab } from "@/context/tabs"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { WslServersProvider } from "@/wsl/context"
-import DirectoryLayout, { DirectoryDataProvider } from "@/pages/directory-layout"
+import DirectoryLayout, { decodeDirectory, DirectoryDataProvider } from "@/pages/directory-layout"
 import LegacyLayout from "@/pages/layout"
 import NewLayout from "@/pages/layout-new"
 import { ErrorPage } from "./pages/error"
 import { useCheckServerHealth } from "./utils/server-health"
 import { legacySessionHref, legacySessionServer, requireServerKey, sessionHref } from "./utils/session-route"
 import { createSessionLineage } from "@/pages/session/session-lineage"
+import { missionControlCopy } from "@/pages/mission-control-copy"
 
 import { SessionPage, SessionRouteErrorBoundary, TargetSessionRouteContent } from "@/pages/session"
 import { NewHome } from "@/pages/home"
 import { LegacyHome } from "@/pages/home/legacy-home"
 
 const NewSession = lazy(() => import("@/pages/new-session"))
+const MissionControl = lazy(() => import("@/pages/mission-control"))
+
+function MissionControlRoute() {
+  const params = useParams<{ dir: string }>()
+  const directory = createMemo(() => decodeDirectory(params.dir))
+  return (
+    <Show when={directory()} keyed>
+      {(value) => (
+        <SelectedServerProviders>
+          <SDKProvider directory={value}>
+            <MissionControl directory={value} />
+          </SDKProvider>
+        </SelectedServerProviders>
+      )}
+    </Show>
+  )
+}
 
 const SessionRoute = () => {
   const settings = useSettings()
@@ -326,9 +344,19 @@ function DesktopCommands() {
   const command = useCommand()
   const language = useLanguage()
   const platform = usePlatform()
+  const navigate = useNavigate()
+  const params = useParams<{ dir?: string }>()
 
   command.register("desktop", () => {
     const commands: CommandOption[] = []
+    if (params.dir) {
+      commands.push({
+        id: "orchestration.open",
+        title: missionControlCopy.open,
+        category: language.t("command.category.project"),
+        onSelect: () => navigate(`/mission-control/${params.dir}`),
+      })
+    }
     if (platform.platform === "desktop" && platform.exportDebugLogs) {
       commands.push({
         id: "logs.export",
@@ -641,6 +669,7 @@ function Routes(props: { serverScoped?: JSX.Element }) {
         <Route path="/server/:serverKey/session/:id" component={TargetSessionRoute} />
       </Show>
       <Route path="/new-session" component={DraftRoute} />
+      <Route path="/mission-control/:dir" component={MissionControlRoute} />
     </>
   )
 }

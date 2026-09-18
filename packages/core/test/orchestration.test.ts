@@ -36,7 +36,11 @@ describe("Orchestration", () => {
     Effect.gen(function* () {
       const orchestration = yield* setup()
       const run = yield* orchestration.create({ projectID, objective: "Implement quota-aware routing" })
-      const inspect = yield* orchestration.addTask({ runID: run.id, title: "Inspect capacity" })
+      const inspect = yield* orchestration.addTask({
+        runID: run.id,
+        title: "Inspect capacity",
+        checks: [{ name: "typecheck", command: "bun typecheck", baseline: true }],
+      })
       const route = yield* orchestration.addTask({
         runID: run.id,
         title: "Resolve route",
@@ -77,11 +81,18 @@ describe("Orchestration", () => {
         status: "passed",
         evidence: { command: "bun typecheck", exitCode: 0 },
       })
+      yield* orchestration.recordReview({
+        runID: run.id,
+        taskID: inspect.id,
+        attemptID: attempt.id,
+        decision: "accepted",
+        note: "Checks passed",
+      })
 
       const detail = yield* orchestration.get(run.id)
       expect(detail.run).toMatchObject({ id: run.id, projectID, status: "active" })
       expect(detail.tasks).toMatchObject([
-        { id: inspect.id, status: "running" },
+        { id: inspect.id, status: "running", checks: [{ name: "typecheck", command: "bun typecheck" }] },
         { id: route.id, status: "draft", routeProfile: "frontier" },
       ])
       expect(detail.dependencies).toEqual([{ runID: run.id, taskID: route.id, dependsOnTaskID: inspect.id }])
@@ -90,6 +101,7 @@ describe("Orchestration", () => {
       expect(detail.evaluations).toMatchObject([
         { attemptID: attempt.id, kind: "typecheck", status: "passed", evidence: { exitCode: 0 } },
       ])
+      expect(detail.reviews).toMatchObject([{ attemptID: attempt.id, decision: "accepted", note: "Checks passed" }])
       expect(yield* orchestration.list({ projectID })).toHaveLength(1)
     }),
   )
@@ -107,6 +119,26 @@ describe("Orchestration", () => {
 
       expect(error).toBeInstanceOf(Orchestration.NotFoundError)
       expect(error).toMatchObject({ resource: "task", id: task.id })
+    }),
+  )
+
+  it.effect("rejects self-referential and cyclic dependencies", () =>
+    Effect.gen(function* () {
+      const orchestration = yield* setup()
+      const run = yield* orchestration.create({ projectID, objective: "Keep the task graph acyclic" })
+      const first = yield* orchestration.addTask({ runID: run.id, title: "First task" })
+      const second = yield* orchestration.addTask({ runID: run.id, title: "Second task" })
+
+      const self = yield* orchestration
+        .addDependency({ runID: run.id, taskID: first.id, dependsOnTaskID: first.id })
+        .pipe(Effect.flip)
+      expect(self).toMatchObject({ reason: "self" })
+
+      yield* orchestration.addDependency({ runID: run.id, taskID: second.id, dependsOnTaskID: first.id })
+      const cycle = yield* orchestration
+        .addDependency({ runID: run.id, taskID: first.id, dependsOnTaskID: second.id })
+        .pipe(Effect.flip)
+      expect(cycle).toMatchObject({ reason: "cycle" })
     }),
   )
 

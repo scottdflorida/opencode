@@ -664,7 +664,77 @@ const scenarios: Scenario[] = [
   }),
   http.protected.get("/api/location", "v2.location.get").json(200, object),
   http.protected.get("/api/orchestration", "v2.orchestration.list").json(200, locationData(array)),
+  http.protected
+    .post("/api/orchestration", "v2.orchestration.create")
+    .at((ctx) => ({
+      path: "/api/orchestration",
+      headers: ctx.headers(),
+      body: { objective: "Exercise orchestration" },
+    }))
+    .json(200, locationData(object)),
   http.protected.get("/api/orchestration/capacity", "v2.orchestration.capacity").json(200, locationData(object)),
+  http.protected
+    .post("/api/orchestration/{runID}/task", "v2.orchestration.addTask")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/task", { runID: "run_httpapi_missing" }),
+      headers: ctx.headers(),
+      body: { title: "Missing run task" },
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/dependency", "v2.orchestration.addDependency")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/dependency", { runID: "run_httpapi_missing" }),
+      headers: ctx.headers(),
+      body: { taskID: "task_httpapi_missing", dependsOnTaskID: "task_httpapi_dependency" },
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/start", "v2.orchestration.start")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/start", { runID: "run_httpapi_missing" }),
+      headers: ctx.headers(),
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/cancel", "v2.orchestration.cancel")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/cancel", { runID: "run_httpapi_missing" }),
+      headers: ctx.headers(),
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/task/{taskID}/accept", "v2.orchestration.accept")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/task/{taskID}/accept", {
+        runID: "run_httpapi_missing",
+        taskID: "task_httpapi_missing",
+      }),
+      headers: ctx.headers(),
+      body: {},
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/task/{taskID}/reject", "v2.orchestration.reject")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/task/{taskID}/reject", {
+        runID: "run_httpapi_missing",
+        taskID: "task_httpapi_missing",
+      }),
+      headers: ctx.headers(),
+      body: {},
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .post("/api/orchestration/{runID}/task/{taskID}/retry", "v2.orchestration.retry")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}/task/{taskID}/retry", {
+        runID: "run_httpapi_missing",
+        taskID: "task_httpapi_missing",
+      }),
+      headers: ctx.headers(),
+    }))
+    .json(404, object, "status"),
   http.protected
     .get("/api/orchestration/route-profile", "v2.orchestration.routeProfiles")
     .json(200, locationData(array)),

@@ -73,7 +73,8 @@ describe("v2 pty HttpApi", () => {
     const created = await request("/api/pty", tmp.path, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ command: "/usr/bin/env", args: ["sh", "-c", "exit 4"], title: "v2" }),
+      // Keep the process alive long enough for node-pty to finish installing its native exit listener.
+      body: JSON.stringify({ command: "/usr/bin/env", args: ["sh", "-c", "sleep 0.1; exit 4"], title: "v2" }),
     })
     expect(created.status).toBe(200)
     const body = Schema.decodeUnknownSync(Location.response(Pty.Info))(await created.json())

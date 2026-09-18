@@ -7,6 +7,7 @@ import { EventV2 } from "./event"
 import { makeGlobalNode } from "./effect/app-node"
 import { Orchestration } from "@opencode-ai/schema/orchestration"
 import { ProjectV2 } from "./project"
+import { ProjectTable } from "./project/sql"
 import { OrchestrationProjector } from "./orchestration/projector"
 import { WorkspaceV2 } from "./workspace"
 import {
@@ -14,6 +15,7 @@ import {
   OrchestrationDependencyTable,
   OrchestrationEvaluationTable,
   OrchestrationRouteDecisionTable,
+  OrchestrationReviewTable,
   OrchestrationRunTable,
   OrchestrationTaskTable,
 } from "./orchestration/sql"
@@ -30,12 +32,23 @@ export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()("Orc
   id: Schema.String,
 }) {}
 
+export class InvalidDependencyError extends Schema.TaggedErrorClass<InvalidDependencyError>()(
+  "Orchestration.InvalidDependencyError",
+  {
+    reason: Schema.Literals(["self", "cycle"]),
+  },
+) {}
+
 export interface Interface {
   readonly list: (input?: { readonly projectID?: ProjectV2.ID }) => Effect.Effect<Orchestration.Run[]>
   readonly get: (runID: RunID) => Effect.Effect<Orchestration.Detail, NotFoundError>
   readonly create: (input: {
     readonly id?: RunID
     readonly projectID: ProjectV2.ID
+    readonly project?: {
+      readonly directory: (typeof ProjectTable.$inferInsert)["worktree"]
+      readonly vcs?: ProjectV2.Vcs
+    }
     readonly objective: string
   }) => Effect.Effect<Orchestration.Run>
   readonly setRunStatus: (input: {
@@ -49,6 +62,7 @@ export interface Interface {
     readonly title: string
     readonly description?: string
     readonly routeProfile?: string
+    readonly checks?: ReadonlyArray<Orchestration.Check>
   }) => Effect.Effect<Orchestration.Task, NotFoundError>
   readonly setTaskStatus: (input: {
     readonly runID: RunID
@@ -59,7 +73,7 @@ export interface Interface {
     readonly runID: RunID
     readonly taskID: TaskID
     readonly dependsOnTaskID: TaskID
-  }) => Effect.Effect<void, NotFoundError>
+  }) => Effect.Effect<void, NotFoundError | InvalidDependencyError>
   readonly createAttempt: (input: {
     readonly id?: AttemptID
     readonly runID: RunID
@@ -74,6 +88,13 @@ export interface Interface {
     readonly attemptID: AttemptID
     readonly status: Orchestration.AttemptStatus
     readonly completed?: DateTime.Utc
+  }) => Effect.Effect<void, NotFoundError>
+  readonly prepareAttempt: (input: {
+    readonly runID: RunID
+    readonly taskID: TaskID
+    readonly attemptID: AttemptID
+    readonly sessionID: NonNullable<(typeof Orchestration.Attempt.Type)["sessionID"]>
+    readonly location: NonNullable<(typeof Orchestration.Attempt.Type)["location"]>
   }) => Effect.Effect<void, NotFoundError>
   readonly recordRouteDecision: (input: {
     readonly id?: Orchestration.RouteDecisionID
@@ -91,6 +112,14 @@ export interface Interface {
     readonly status: Orchestration.EvaluationStatus
     readonly evidence: Record<string, unknown>
   }) => Effect.Effect<Orchestration.Evaluation, NotFoundError>
+  readonly recordReview: (input: {
+    readonly id?: Orchestration.ReviewID
+    readonly runID: RunID
+    readonly taskID: TaskID
+    readonly attemptID: AttemptID
+    readonly decision: Orchestration.ReviewDecision
+    readonly note?: string
+  }) => Effect.Effect<Orchestration.Review, NotFoundError>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Orchestration") {}
@@ -172,6 +201,13 @@ const layer = Layer.effect(
           .orderBy(asc(OrchestrationEvaluationTable.time_created), asc(OrchestrationEvaluationTable.id))
           .all()
           .pipe(Effect.orDie),
+        reviews: db
+          .select()
+          .from(OrchestrationReviewTable)
+          .where(eq(OrchestrationReviewTable.run_id, runID))
+          .orderBy(asc(OrchestrationReviewTable.time_created), asc(OrchestrationReviewTable.id))
+          .all()
+          .pipe(Effect.orDie),
       })
       return {
         run,
@@ -200,6 +236,15 @@ const layer = Layer.effect(
           evidence: row.evidence,
           time: DateTime.makeUnsafe(row.time_created),
         })),
+        reviews: rows.reviews.map((row) => ({
+          id: row.id,
+          runID: row.run_id,
+          taskID: row.task_id,
+          attemptID: row.attempt_id,
+          decision: row.decision,
+          note: row.note ?? undefined,
+          time: DateTime.makeUnsafe(row.time_created),
+        })),
       } satisfies Orchestration.Detail
     })
 
@@ -217,6 +262,19 @@ const layer = Layer.effect(
       get,
       create: Effect.fn("Orchestration.create")(function* (input) {
         const runID = input.id ?? Orchestration.RunID.create()
+        if (input.project) {
+          yield* db
+            .insert(ProjectTable)
+            .values({
+              id: input.projectID,
+              worktree: input.project.directory,
+              vcs: input.project.vcs?.type,
+              sandboxes: [],
+            })
+            .onConflictDoNothing()
+            .run()
+            .pipe(Effect.orDie)
+        }
         yield* events.publish(Orchestration.RunCreated, {
           runID,
           projectID: input.projectID,
@@ -243,6 +301,7 @@ const layer = Layer.effect(
           title: input.title,
           description: input.description,
           routeProfile: input.routeProfile,
+          checks: input.checks,
           timestamp: yield* DateTime.now,
         })
         return (yield* get(input.runID)).tasks.find((task) => task.id === taskID)!
@@ -258,6 +317,9 @@ const layer = Layer.effect(
       }),
       addDependency: Effect.fn("Orchestration.addDependency")(function* (input) {
         yield* Effect.all([getTask(input.runID, input.taskID), getTask(input.runID, input.dependsOnTaskID)])
+        if (input.taskID === input.dependsOnTaskID) yield* new InvalidDependencyError({ reason: "self" })
+        if (createsDependencyCycle((yield* get(input.runID)).dependencies, input.taskID, input.dependsOnTaskID))
+          yield* new InvalidDependencyError({ reason: "cycle" })
         yield* events.publish(Orchestration.DependencyAdded, {
           ...input,
           timestamp: yield* DateTime.now,
@@ -281,6 +343,14 @@ const layer = Layer.effect(
         const attempt = yield* getAttempt(input.runID, input.attemptID)
         if (attempt.task_id !== input.taskID) yield* new NotFoundError({ resource: "attempt", id: input.attemptID })
         yield* events.publish(Orchestration.AttemptStatusChanged, {
+          ...input,
+          timestamp: yield* DateTime.now,
+        })
+      }),
+      prepareAttempt: Effect.fn("Orchestration.prepareAttempt")(function* (input) {
+        const attempt = yield* getAttempt(input.runID, input.attemptID)
+        if (attempt.task_id !== input.taskID) yield* new NotFoundError({ resource: "attempt", id: input.attemptID })
+        yield* events.publish(Orchestration.AttemptPrepared, {
           ...input,
           timestamp: yield* DateTime.now,
         })
@@ -337,6 +407,23 @@ const layer = Layer.effect(
           time,
         }
       }),
+      recordReview: Effect.fn("Orchestration.recordReview")(function* (input) {
+        yield* getTask(input.runID, input.taskID)
+        const attempt = yield* getAttempt(input.runID, input.attemptID)
+        if (attempt.task_id !== input.taskID) yield* new NotFoundError({ resource: "attempt", id: input.attemptID })
+        const id = input.id ?? Orchestration.ReviewID.create()
+        const time = yield* DateTime.now
+        yield* events.publish(Orchestration.ReviewRecorded, {
+          reviewID: id,
+          runID: input.runID,
+          taskID: input.taskID,
+          attemptID: input.attemptID,
+          decision: input.decision,
+          note: input.note,
+          timestamp: time,
+        })
+        return { ...input, id, time }
+      }),
     })
 
     return result
@@ -361,6 +448,7 @@ function taskFromRow(row: typeof OrchestrationTaskTable.$inferSelect): Orchestra
     title: row.title,
     description: row.description ?? undefined,
     routeProfile: row.route_profile ?? undefined,
+    checks: row.checks,
     status: row.status,
     time: { created: DateTime.makeUnsafe(row.time_created), updated: DateTime.makeUnsafe(row.time_updated) },
   }
@@ -393,3 +481,25 @@ export const node = makeGlobalNode({
   layer,
   deps: [Database.node, EventV2.node, OrchestrationProjector.node],
 })
+
+function createsDependencyCycle(
+  dependencies: ReadonlyArray<Orchestration.Dependency>,
+  taskID: TaskID,
+  dependsOnTaskID: TaskID,
+) {
+  return reachesTask(dependencies, taskID, dependsOnTaskID, new Set())
+}
+
+function reachesTask(
+  dependencies: ReadonlyArray<Orchestration.Dependency>,
+  taskID: TaskID,
+  current: TaskID,
+  visited: ReadonlySet<TaskID>,
+): boolean {
+  if (current === taskID) return true
+  if (visited.has(current)) return false
+  const next = new Set(visited).add(current)
+  return dependencies
+    .filter((dependency) => dependency.taskID === current)
+    .some((dependency) => reachesTask(dependencies, taskID, dependency.dependsOnTaskID, next))
+}

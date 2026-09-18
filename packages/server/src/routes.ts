@@ -10,6 +10,7 @@ import { SessionV2 } from "@opencode-ai/core/session"
 import { SessionExecution } from "@opencode-ai/core/session/execution"
 import { LocationServiceMap } from "@opencode-ai/core/location-service-map"
 import { Orchestration } from "@opencode-ai/core/orchestration"
+import { OrchestrationScheduler } from "@opencode-ai/core/orchestration/scheduler"
 import { SessionExecutionLocal } from "@opencode-ai/core/session/execution/local"
 import { ToolOutputStore } from "@opencode-ai/core/tool-output-store"
 import { HttpRouter, HttpServer } from "effect/unstable/http"
@@ -52,6 +53,12 @@ export function createEmbeddedRoutes() {
 
 function makeRoutes<AuthError, AuthServices>(auth: Layer.Layer<ServerAuth.Config, AuthError, AuthServices>) {
   const serviceLayer = AppNodeBuilder.build(applicationServices, [[SessionExecution.node, SessionExecutionLocal.node]])
+  const schedulerLayer = AppNodeBuilder.build(OrchestrationScheduler.node, [
+    [SessionExecution.node, SessionExecutionLocal.node],
+  ])
+  const schedulerReady: Layer.Layer<OrchestrationScheduler.Service, unknown> = schedulerLayer.pipe(
+    Layer.provide(serviceLayer),
+  )
 
   return HttpApiBuilder.layer(Api, { openapiPath: "/openapi.json" }).pipe(
     Layer.provide(handlers),
@@ -61,6 +68,7 @@ function makeRoutes<AuthError, AuthServices>(auth: Layer.Layer<ServerAuth.Config
     Layer.provide(schemaErrorLayer),
     Layer.provide(auth),
     Layer.provide(serviceLayer),
+    Layer.provide(schedulerReady),
   )
 }
 

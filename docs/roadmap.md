@@ -32,6 +32,8 @@ Status: complete. The control plane now persists runs, tasks, dependencies, atte
 
 Exit condition: a trusted repository can produce two isolated, reviewable changes with durable provenance and no automatic merge.
 
+Status: complete. Operators can create explicit task graphs, attach baseline-aware checks, and start a local scheduler from Mission Control. Independent direct-model tasks run concurrently in separate Git ProjectCopy worktrees and V2 Sessions. Results stop at `awaiting_review` with route, session, workspace, check, and review provenance. Accept, reject, retry, and cancellation are explicit. Harness execution, generated planning, sandboxing, and automatic integration remain outside this phase.
+
 ## Phase 3: add planning and typed judgment
 
 - Add a typed planner output schema and validate generated task graphs.

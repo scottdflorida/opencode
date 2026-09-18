@@ -26,6 +26,16 @@ export class RouteProfileNotFoundError extends Schema.ErrorClass<RouteProfileNot
   { httpApiStatus: 404 },
 ) {}
 
+export class OrchestrationOperationError extends Schema.ErrorClass<OrchestrationOperationError>(
+  "OrchestrationOperationError",
+)(
+  {
+    name: Schema.Literal("OrchestrationOperationError"),
+    data: Schema.Struct({ operation: Schema.String, message: Schema.String }),
+  },
+  { httpApiStatus: 409 },
+) {}
+
 export const OrchestrationGroup = HttpApiGroup.make("server.orchestration")
   .add(
     HttpApiEndpoint.get("orchestration.list", root, {
@@ -42,6 +52,21 @@ export const OrchestrationGroup = HttpApiGroup.make("server.orchestration")
       ),
   )
   .add(
+    HttpApiEndpoint.post("orchestration.create", root, {
+      query: LocationQuery,
+      payload: Schema.Struct({ objective: Schema.String }),
+      success: Location.response(Orchestration.Detail),
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.create",
+          summary: "Create an orchestration run",
+          description: "Create a durable manual objective for the current project.",
+        }),
+      ),
+  )
+  .add(
     HttpApiEndpoint.get("orchestration.capacity", `${root}/capacity`, {
       query: LocationQuery,
       success: Location.response(Orchestration.CapacitySnapshot),
@@ -52,6 +77,127 @@ export const OrchestrationGroup = HttpApiGroup.make("server.orchestration")
           identifier: "v2.orchestration.capacity",
           summary: "Get provider capacity",
           description: "Return the latest cached provider-capacity observation.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.addTask", `${root}/:runID/task`, {
+      params: { runID: Orchestration.RunID },
+      query: LocationQuery,
+      payload: Schema.Struct({
+        title: Schema.String,
+        description: Schema.String.pipe(Schema.optional),
+        routeProfile: Schema.String.pipe(Schema.optional),
+        checks: Schema.Array(Orchestration.Check).pipe(Schema.optional),
+      }),
+      success: Location.response(Orchestration.Detail),
+      error: OrchestrationNotFoundError,
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.addTask",
+          summary: "Add an orchestration task",
+          description: "Add an explicit task and deterministic checks to a draft run.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.addDependency", `${root}/:runID/dependency`, {
+      params: { runID: Orchestration.RunID },
+      query: LocationQuery,
+      payload: Schema.Struct({ taskID: Orchestration.TaskID, dependsOnTaskID: Orchestration.TaskID }),
+      success: Location.response(Orchestration.Detail),
+      error: [OrchestrationNotFoundError, OrchestrationOperationError],
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.addDependency",
+          summary: "Add a task dependency",
+          description: "Require one task to be accepted before another becomes ready.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.start", `${root}/:runID/start`, {
+      params: { runID: Orchestration.RunID },
+      query: LocationQuery,
+      success: Location.response(Orchestration.Detail),
+      error: [OrchestrationNotFoundError, OrchestrationOperationError],
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.start",
+          summary: "Start an orchestration run",
+          description: "Schedule ready tasks for isolated direct-model execution.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.cancel", `${root}/:runID/cancel`, {
+      params: { runID: Orchestration.RunID },
+      query: LocationQuery,
+      success: Location.response(Orchestration.Detail),
+      error: OrchestrationNotFoundError,
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.cancel",
+          summary: "Cancel an orchestration run",
+          description: "Interrupt local execution and cancel unfinished tasks.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.accept", `${root}/:runID/task/:taskID/accept`, {
+      params: { runID: Orchestration.RunID, taskID: Orchestration.TaskID },
+      query: LocationQuery,
+      payload: Schema.Struct({ note: Schema.String.pipe(Schema.optional) }),
+      success: Location.response(Orchestration.Detail),
+      error: [OrchestrationNotFoundError, OrchestrationOperationError],
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.accept",
+          summary: "Accept a task result",
+          description: "Record acceptance and unlock dependent tasks.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.reject", `${root}/:runID/task/:taskID/reject`, {
+      params: { runID: Orchestration.RunID, taskID: Orchestration.TaskID },
+      query: LocationQuery,
+      payload: Schema.Struct({ note: Schema.String.pipe(Schema.optional) }),
+      success: Location.response(Orchestration.Detail),
+      error: [OrchestrationNotFoundError, OrchestrationOperationError],
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.reject",
+          summary: "Reject a task result",
+          description: "Record rejection and leave the isolated result unmerged.",
+        }),
+      ),
+  )
+  .add(
+    HttpApiEndpoint.post("orchestration.retry", `${root}/:runID/task/:taskID/retry`, {
+      params: { runID: Orchestration.RunID, taskID: Orchestration.TaskID },
+      query: LocationQuery,
+      success: Location.response(Orchestration.Detail),
+      error: [OrchestrationNotFoundError, OrchestrationOperationError],
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "v2.orchestration.retry",
+          summary: "Retry a task",
+          description: "Create a fresh attempt with a new worktree and Session.",
         }),
       ),
   )

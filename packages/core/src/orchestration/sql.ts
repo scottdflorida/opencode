@@ -35,6 +35,7 @@ export const OrchestrationTaskTable = sqliteTable(
     title: text().notNull(),
     description: text(),
     route_profile: text(),
+    checks: text({ mode: "json" }).$type<ReadonlyArray<Orchestration.Check>>().notNull().default([]),
     status: text().$type<Orchestration.TaskStatus>().notNull(),
     ...Timestamps,
   },
@@ -134,4 +135,27 @@ export const OrchestrationEvaluationTable = sqliteTable(
     time_created: integer().notNull(),
   },
   (table) => [index("orchestration_evaluation_attempt_created_idx").on(table.attempt_id, table.time_created)],
+)
+
+export const OrchestrationReviewTable = sqliteTable(
+  "orchestration_review",
+  {
+    id: text().$type<Orchestration.ReviewID>().primaryKey(),
+    run_id: text()
+      .$type<Orchestration.RunID>()
+      .notNull()
+      .references(() => OrchestrationRunTable.id, { onDelete: "cascade" }),
+    task_id: text()
+      .$type<Orchestration.TaskID>()
+      .notNull()
+      .references(() => OrchestrationTaskTable.id, { onDelete: "cascade" }),
+    attempt_id: text()
+      .$type<Orchestration.AttemptID>()
+      .notNull()
+      .references(() => OrchestrationAttemptTable.id, { onDelete: "cascade" }),
+    decision: text().$type<Orchestration.ReviewDecision>().notNull(),
+    note: text(),
+    time_created: integer().notNull(),
+  },
+  (table) => [index("orchestration_review_attempt_created_idx").on(table.attempt_id, table.time_created)],
 )

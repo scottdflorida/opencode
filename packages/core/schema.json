@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "8b5f29ce-865b-4466-aef9-e9cabf754b01",
+  "id": "adfce52e-37c5-446f-bdae-acbcd2d01d8d",
   "prevIds": [
-    "f14a9b18-8207-487e-a3d3-227e629ba9ad"
+    "8b5f29ce-865b-4466-aef9-e9cabf754b01"
   ],
   "ddl": [
     {
@@ -48,6 +48,10 @@
     },
     {
       "name": "orchestration_evaluation",
+      "entityType": "tables"
+    },
+    {
+      "name": "orchestration_review",
       "entityType": "tables"
     },
     {
@@ -794,6 +798,76 @@
       "generated": null,
       "name": "id",
       "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "run_id",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "task_id",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "attempt_id",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "decision",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "note",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "time_created",
+      "entityType": "columns",
+      "table": "orchestration_review"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
       "table": "orchestration_route_decision"
     },
     {
@@ -963,6 +1037,16 @@
       "default": null,
       "generated": null,
       "name": "route_profile",
+      "entityType": "columns",
+      "table": "orchestration_task"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'[]'",
+      "generated": null,
+      "name": "checks",
       "entityType": "columns",
       "table": "orchestration_task"
     },
@@ -2127,6 +2211,51 @@
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
+      "name": "fk_orchestration_review_run_id_orchestration_run_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_review"
+    },
+    {
+      "columns": [
+        "task_id"
+      ],
+      "tableTo": "orchestration_task",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_orchestration_review_task_id_orchestration_task_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_review"
+    },
+    {
+      "columns": [
+        "attempt_id"
+      ],
+      "tableTo": "orchestration_attempt",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_orchestration_review_attempt_id_orchestration_attempt_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_review"
+    },
+    {
+      "columns": [
+        "run_id"
+      ],
+      "tableTo": "orchestration_run",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
       "name": "fk_orchestration_route_decision_run_id_orchestration_run_id_fk",
       "entityType": "fks",
       "table": "orchestration_route_decision"
@@ -2468,6 +2597,15 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "orchestration_review_pk",
+      "table": "orchestration_review",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "orchestration_route_decision_pk",
       "table": "orchestration_route_decision",
       "entityType": "pks"
@@ -2686,6 +2824,24 @@
       "name": "orchestration_evaluation_attempt_created_idx",
       "entityType": "indexes",
       "table": "orchestration_evaluation"
+    },
+    {
+      "columns": [
+        {
+          "value": "attempt_id",
+          "isExpression": false
+        },
+        {
+          "value": "time_created",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "orchestration_review_attempt_created_idx",
+      "entityType": "indexes",
+      "table": "orchestration_review"
     },
     {
       "columns": [

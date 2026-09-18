@@ -16,6 +16,8 @@ An Agent may name a default route profile. A task or operator override may selec
 
 A direct candidate resolves to an OpenCode provider and model. It executes through the V2 Session runner and preserves the invariant of one explicit stream call per provider turn.
 
+Phase 2 executes direct candidates through isolated V2 Sessions. The selected provider, model, and variant are pinned to the attempt before execution begins.
+
 Local inference servers can participate through configured OpenAI-compatible providers. Their health should be observed separately from paid-provider capacity.
 
 ### External harness
@@ -23,6 +25,8 @@ Local inference servers can participate through configured OpenAI-compatible pro
 A harness candidate invokes an installed coding agent such as Claude Code, Codex, Cursor Agent, or Copilot CLI. Its record includes the harness version, requested model and effort, working directory, process outcome, transcript reference, and artifacts.
 
 Harnesses are not represented as synthetic OpenCode providers. They can contain their own tool loop and authentication behavior, which must remain visible in provenance.
+
+Harness execution is deferred to Phase 4. If a Phase 2 route selects a harness candidate, the scheduler records the route and a failed attempt with an explicit unsupported-executor evaluation.
 
 ## Resolution order
 

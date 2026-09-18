@@ -61,6 +61,7 @@ import { PermissionSaved } from "@opencode-ai/core/permission/saved"
 import { ProjectV2 } from "@opencode-ai/core/project"
 import { ProjectCopy } from "@opencode-ai/core/project/copy"
 import { Orchestration } from "@opencode-ai/core/orchestration"
+import { OrchestrationScheduler } from "@opencode-ai/core/orchestration/scheduler"
 import { PtyTicket } from "@opencode-ai/core/pty/ticket"
 import { Ripgrep } from "@opencode-ai/core/ripgrep"
 import { SessionProjector } from "@opencode-ai/core/session/projector"
@@ -304,6 +305,12 @@ export function createRoutes(
       ]),
     ),
     Layer.provide(locationServiceMapV2),
+    Layer.provide(
+      AppNodeBuilderV1.build(OrchestrationScheduler.node, [
+        [LocationServiceMap.node, locationServiceMapV2],
+        [SessionExecution.node, SessionExecutionLocal.node],
+      ]),
+    ),
 
     Layer.provide(AppNodeBuilderV1.build(app)),
     // Must stay last: layers provided later in this pipe build beneath earlier ones,

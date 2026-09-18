@@ -114,8 +114,24 @@ import type {
   ProjectCopiesRefreshOutput,
   ServerOrchestrationListInput,
   ServerOrchestrationListOutput,
+  ServerOrchestrationCreateInput,
+  ServerOrchestrationCreateOutput,
   ServerOrchestrationCapacityInput,
   ServerOrchestrationCapacityOutput,
+  ServerOrchestrationAddTaskInput,
+  ServerOrchestrationAddTaskOutput,
+  ServerOrchestrationAddDependencyInput,
+  ServerOrchestrationAddDependencyOutput,
+  ServerOrchestrationStartInput,
+  ServerOrchestrationStartOutput,
+  ServerOrchestrationCancelInput,
+  ServerOrchestrationCancelOutput,
+  ServerOrchestrationAcceptInput,
+  ServerOrchestrationAcceptOutput,
+  ServerOrchestrationRejectInput,
+  ServerOrchestrationRejectOutput,
+  ServerOrchestrationRetryInput,
+  ServerOrchestrationRetryOutput,
   ServerOrchestrationRouteProfilesInput,
   ServerOrchestrationRouteProfilesOutput,
   ServerOrchestrationResolveRouteInput,
@@ -1010,6 +1026,19 @@ export function make(options: ClientOptions) {
           },
           requestOptions,
         ),
+      create: (input: ServerOrchestrationCreateInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationCreateOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration`,
+            query: { location: input["location"] },
+            body: { objective: input["objective"] },
+            successStatus: 200,
+            declaredStatuses: [401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
       capacity: (input?: ServerOrchestrationCapacityInput, requestOptions?: RequestOptions) =>
         request<ServerOrchestrationCapacityOutput>(
           {
@@ -1018,6 +1047,99 @@ export function make(options: ClientOptions) {
             query: { location: input?.["location"] },
             successStatus: 200,
             declaredStatuses: [401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      addTask: (input: ServerOrchestrationAddTaskInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationAddTaskOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/task`,
+            query: { location: input["location"] },
+            body: {
+              title: input["title"],
+              description: input["description"],
+              routeProfile: input["routeProfile"],
+              checks: input["checks"],
+            },
+            successStatus: 200,
+            declaredStatuses: [404, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      addDependency: (input: ServerOrchestrationAddDependencyInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationAddDependencyOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/dependency`,
+            query: { location: input["location"] },
+            body: { taskID: input["taskID"], dependsOnTaskID: input["dependsOnTaskID"] },
+            successStatus: 200,
+            declaredStatuses: [404, 409, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      start: (input: ServerOrchestrationStartInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationStartOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/start`,
+            query: { location: input["location"] },
+            successStatus: 200,
+            declaredStatuses: [404, 409, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      cancel: (input: ServerOrchestrationCancelInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationCancelOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/cancel`,
+            query: { location: input["location"] },
+            successStatus: 200,
+            declaredStatuses: [404, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      accept: (input: ServerOrchestrationAcceptInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationAcceptOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/task/${encodeURIComponent(input.taskID)}/accept`,
+            query: { location: input["location"] },
+            body: { note: input["note"] },
+            successStatus: 200,
+            declaredStatuses: [404, 409, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      reject: (input: ServerOrchestrationRejectInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationRejectOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/task/${encodeURIComponent(input.taskID)}/reject`,
+            query: { location: input["location"] },
+            body: { note: input["note"] },
+            successStatus: 200,
+            declaredStatuses: [404, 409, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      retry: (input: ServerOrchestrationRetryInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationRetryOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}/task/${encodeURIComponent(input.taskID)}/retry`,
+            query: { location: input["location"] },
+            successStatus: 200,
+            declaredStatuses: [404, 409, 401, 400],
             empty: false,
           },
           requestOptions,

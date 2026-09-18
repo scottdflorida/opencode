@@ -29,6 +29,9 @@ export type RouteDecisionID = typeof RouteDecisionID.Type
 export const EvaluationID = identifier("eval_", "Orchestration.EvaluationID")
 export type EvaluationID = typeof EvaluationID.Type
 
+export const ReviewID = identifier("review_", "Orchestration.ReviewID")
+export type ReviewID = typeof ReviewID.Type
+
 export const RunStatus = Schema.Literals(["draft", "active", "suspended", "completed", "cancelled"])
 export type RunStatus = typeof RunStatus.Type
 
@@ -60,6 +63,17 @@ export type AttemptStatus = typeof AttemptStatus.Type
 export const EvaluationStatus = Schema.Literals(["passed", "failed", "indeterminate"])
 export type EvaluationStatus = typeof EvaluationStatus.Type
 
+export const ReviewDecision = Schema.Literals(["accepted", "rejected"])
+export type ReviewDecision = typeof ReviewDecision.Type
+
+export const Check = Schema.Struct({
+  name: Schema.String,
+  command: Schema.String,
+  baseline: Schema.Boolean.pipe(optional),
+  timeoutSeconds: Schema.Int.check(Schema.isGreaterThan(0)).pipe(optional),
+}).annotate({ identifier: "Orchestration.Check" })
+export interface Check extends Schema.Schema.Type<typeof Check> {}
+
 export const Time = Schema.Struct({
   created: DateTimeUtcFromMillis,
   updated: DateTimeUtcFromMillis,
@@ -82,6 +96,7 @@ export const Task = Schema.Struct({
   title: Schema.String,
   description: Schema.String.pipe(optional),
   routeProfile: Schema.String.pipe(optional),
+  checks: Schema.Array(Check),
   status: TaskStatus,
   time: Time,
 }).annotate({ identifier: "Orchestration.Task" })
@@ -250,6 +265,17 @@ export const Evaluation = Schema.Struct({
 }).annotate({ identifier: "Orchestration.Evaluation" })
 export interface Evaluation extends Schema.Schema.Type<typeof Evaluation> {}
 
+export const Review = Schema.Struct({
+  id: ReviewID,
+  runID: RunID,
+  taskID: TaskID,
+  attemptID: AttemptID,
+  decision: ReviewDecision,
+  note: Schema.String.pipe(optional),
+  time: DateTimeUtcFromMillis,
+}).annotate({ identifier: "Orchestration.Review" })
+export interface Review extends Schema.Schema.Type<typeof Review> {}
+
 export const Detail = Schema.Struct({
   run: Run,
   tasks: Schema.Array(Task),
@@ -257,6 +283,7 @@ export const Detail = Schema.Struct({
   attempts: Schema.Array(Attempt),
   routeDecisions: Schema.Array(RouteDecision),
   evaluations: Schema.Array(Evaluation),
+  reviews: Schema.Array(Review),
 }).annotate({ identifier: "Orchestration.Detail" })
 export interface Detail extends Schema.Schema.Type<typeof Detail> {}
 
@@ -284,6 +311,7 @@ export const TaskAdded = Event.define({
     title: Schema.String,
     description: Schema.String.pipe(optional),
     routeProfile: Schema.String.pipe(optional),
+    checks: Schema.Array(Check).pipe(optional),
   },
 })
 
@@ -309,6 +337,18 @@ export const AttemptCreated = Event.define({
     candidate: Candidate.pipe(optional),
     sessionID: SessionID.pipe(optional),
     location: Location.Ref.pipe(optional),
+  },
+})
+
+export const AttemptPrepared = Event.define({
+  type: "orchestration.attempt.prepared",
+  ...durable,
+  schema: {
+    ...base,
+    attemptID: AttemptID,
+    taskID: TaskID,
+    sessionID: SessionID,
+    location: Location.Ref,
   },
 })
 
@@ -350,6 +390,19 @@ export const EvaluationRecorded = Event.define({
   },
 })
 
+export const ReviewRecorded = Event.define({
+  type: "orchestration.review.recorded",
+  ...durable,
+  schema: {
+    ...base,
+    reviewID: ReviewID,
+    taskID: TaskID,
+    attemptID: AttemptID,
+    decision: ReviewDecision,
+    note: Schema.String.pipe(optional),
+  },
+})
+
 export const Definitions = Event.inventory(
   RunCreated,
   RunStatusChanged,
@@ -357,9 +410,11 @@ export const Definitions = Event.inventory(
   TaskStatusChanged,
   DependencyAdded,
   AttemptCreated,
+  AttemptPrepared,
   AttemptStatusChanged,
   RouteDecided,
   EvaluationRecorded,
+  ReviewRecorded,
 )
 
 export const Events = Schema.Union(Definitions, { mode: "oneOf" }).pipe(Schema.toTaggedUnion("type"))

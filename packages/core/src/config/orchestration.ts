@@ -42,5 +42,6 @@ export class RouteProfile extends Schema.Class<RouteProfile>("ConfigV2.Orchestra
 
 export class Info extends Schema.Class<Info>("ConfigV2.Orchestration")({
   default_route_profile: Schema.String.pipe(Schema.optional),
+  max_concurrency: Schema.Int.check(Schema.isGreaterThan(0)).pipe(Schema.optional),
   route_profiles: Schema.Record(Schema.String, RouteProfile).pipe(Schema.optional),
 }) {}
