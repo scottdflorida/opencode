@@ -9,6 +9,7 @@ import { PtyTicket } from "@opencode-ai/core/pty/ticket"
 import { SessionV2 } from "@opencode-ai/core/session"
 import { SessionExecution } from "@opencode-ai/core/session/execution"
 import { LocationServiceMap } from "@opencode-ai/core/location-service-map"
+import { Orchestration } from "@opencode-ai/core/orchestration"
 import { SessionExecutionLocal } from "@opencode-ai/core/session/execution/local"
 import { ToolOutputStore } from "@opencode-ai/core/tool-output-store"
 import { HttpRouter, HttpServer } from "effect/unstable/http"
@@ -34,6 +35,7 @@ const applicationServices = LayerNode.group([
   Credential.node,
   PtyEnvironment.node,
   LocationServiceMap.node,
+  Orchestration.node,
 ])
 
 export function createRoutes(password?: string) {

@@ -663,6 +663,26 @@ const scenarios: Scenario[] = [
     check(body.healthy === true, "v2 server should report healthy")
   }),
   http.protected.get("/api/location", "v2.location.get").json(200, object),
+  http.protected.get("/api/orchestration", "v2.orchestration.list").json(200, locationData(array)),
+  http.protected.get("/api/orchestration/capacity", "v2.orchestration.capacity").json(200, locationData(object)),
+  http.protected
+    .get("/api/orchestration/route-profile", "v2.orchestration.routeProfiles")
+    .json(200, locationData(array)),
+  http.protected
+    .post("/api/orchestration/route/resolve", "v2.orchestration.resolveRoute")
+    .at((ctx) => ({
+      path: "/api/orchestration/route/resolve",
+      headers: ctx.headers(),
+      body: { profile: "missing" },
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .get("/api/orchestration/{runID}", "v2.orchestration.get")
+    .at((ctx) => ({
+      path: route("/api/orchestration/{runID}", { runID: "run_httpapi_missing" }),
+      headers: ctx.headers(),
+    }))
+    .json(404, object, "status"),
   http.protected.get("/api/agent", "v2.agent.list").json(200, locationData(array)),
   http.protected.get("/api/model", "v2.model.list").json(200, locationData(array)),
   http.protected.get("/api/provider", "v2.provider.list").json(200, locationData(array)),

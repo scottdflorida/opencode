@@ -60,6 +60,7 @@ import { Npm } from "@opencode-ai/core/npm"
 import { PermissionSaved } from "@opencode-ai/core/permission/saved"
 import { ProjectV2 } from "@opencode-ai/core/project"
 import { ProjectCopy } from "@opencode-ai/core/project/copy"
+import { Orchestration } from "@opencode-ai/core/orchestration"
 import { PtyTicket } from "@opencode-ai/core/pty/ticket"
 import { Ripgrep } from "@opencode-ai/core/ripgrep"
 import { SessionProjector } from "@opencode-ai/core/session/projector"
@@ -265,6 +266,7 @@ const app = LayerNode.group([
   EventV2.node,
   ProjectV2.node,
   ProjectCopy.node,
+  Orchestration.node,
   PtyTicket.node,
 ])
 

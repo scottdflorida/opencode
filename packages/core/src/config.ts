@@ -18,6 +18,7 @@ import { ConfigExperimental } from "./config/experimental"
 import { ConfigFormatter } from "./config/formatter"
 import { ConfigLSP } from "./config/lsp"
 import { ConfigMCP } from "./config/mcp"
+import { ConfigOrchestration } from "./config/orchestration"
 import { ConfigPlugin } from "./config/plugin"
 import { ConfigProvider } from "./config/provider"
 import { ConfigReference } from "./config/reference"
@@ -104,6 +105,9 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   }),
   experimental: ConfigExperimental.Experimental.pipe(Schema.optional),
   providers: Schema.Record(Schema.String, ConfigProvider.Info).pipe(Schema.optional),
+  orchestration: ConfigOrchestration.Info.pipe(Schema.optional).annotate({
+    description: "Durable task orchestration and model routing policy",
+  }),
 }) {}
 
 export class Document extends Schema.Class<Document>("Config.Document")({

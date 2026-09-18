@@ -112,6 +112,16 @@ import type {
   ProjectCopiesRemoveOutput,
   ProjectCopiesRefreshInput,
   ProjectCopiesRefreshOutput,
+  ServerOrchestrationListInput,
+  ServerOrchestrationListOutput,
+  ServerOrchestrationCapacityInput,
+  ServerOrchestrationCapacityOutput,
+  ServerOrchestrationRouteProfilesInput,
+  ServerOrchestrationRouteProfilesOutput,
+  ServerOrchestrationResolveRouteInput,
+  ServerOrchestrationResolveRouteOutput,
+  ServerOrchestrationGetInput,
+  ServerOrchestrationGetOutput,
 } from "./types"
 import { ClientError } from "./client-error"
 
@@ -983,6 +993,69 @@ export function make(options: ClientOptions) {
             successStatus: 204,
             declaredStatuses: [400, 401],
             empty: true,
+          },
+          requestOptions,
+        ),
+    },
+    "server.orchestration": {
+      list: (input?: ServerOrchestrationListInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationListOutput>(
+          {
+            method: "GET",
+            path: `/api/orchestration`,
+            query: { location: input?.["location"] },
+            successStatus: 200,
+            declaredStatuses: [401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      capacity: (input?: ServerOrchestrationCapacityInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationCapacityOutput>(
+          {
+            method: "GET",
+            path: `/api/orchestration/capacity`,
+            query: { location: input?.["location"] },
+            successStatus: 200,
+            declaredStatuses: [401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      routeProfiles: (input?: ServerOrchestrationRouteProfilesInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationRouteProfilesOutput>(
+          {
+            method: "GET",
+            path: `/api/orchestration/route-profile`,
+            query: { location: input?.["location"] },
+            successStatus: 200,
+            declaredStatuses: [401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      resolveRoute: (input?: ServerOrchestrationResolveRouteInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationResolveRouteOutput>(
+          {
+            method: "POST",
+            path: `/api/orchestration/route/resolve`,
+            query: { location: input?.["location"] },
+            body: { profile: input?.["profile"] },
+            successStatus: 200,
+            declaredStatuses: [404, 401, 400],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      get: (input: ServerOrchestrationGetInput, requestOptions?: RequestOptions) =>
+        request<ServerOrchestrationGetOutput>(
+          {
+            method: "GET",
+            path: `/api/orchestration/${encodeURIComponent(input.runID)}`,
+            query: { location: input["location"] },
+            successStatus: 200,
+            declaredStatuses: [404, 401, 400],
+            empty: false,
           },
           requestOptions,
         ),

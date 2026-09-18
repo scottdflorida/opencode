@@ -15,6 +15,7 @@ import { Integration } from "./integration"
 import { Location } from "./location"
 import { LocationMutation } from "./location-mutation"
 import { LocationServiceMap } from "./location-service-map"
+import { OrchestrationRouting } from "./orchestration/routing"
 import { PermissionV2 } from "./permission"
 import { PluginV2 } from "./plugin"
 import { PluginInternal } from "./plugin/internal"
@@ -43,6 +44,7 @@ export const locationServices = LayerNode.group([
   Location.node,
   Policy.node,
   Config.node,
+  OrchestrationRouting.node,
   AgentV2.node,
   CommandV2.node,
   Reference.node,
