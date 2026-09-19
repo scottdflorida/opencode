@@ -13,6 +13,14 @@
     },
   },
   "mcp": {},
+  "orchestration": {
+    "judge": {
+      "mode": "shadow",
+      "provider": "jev",
+      "model": "jev-latest",
+      "timeout_ms": 10000,
+    },
+  },
   "tools": {
     "github-triage": false,
     "github-pr-search": false,

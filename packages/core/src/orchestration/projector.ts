@@ -10,6 +10,7 @@ import {
   OrchestrationAttemptTable,
   OrchestrationDependencyTable,
   OrchestrationEvaluationTable,
+  OrchestrationJudgmentTable,
   OrchestrationRouteDecisionTable,
   OrchestrationReviewTable,
   OrchestrationRunTable,
@@ -180,6 +181,23 @@ const layer = Layer.effectDiscard(
           attempt_id: event.data.attemptID,
           decision: event.data.decision,
           note: event.data.note,
+          time_created: DateTime.toEpochMillis(event.data.timestamp),
+        })
+        .run()
+        .pipe(Effect.orDie, Effect.asVoid),
+    )
+
+    yield* events.project(Orchestration.JudgmentRecorded, (event) =>
+      db
+        .insert(OrchestrationJudgmentTable)
+        .values({
+          id: event.data.judgmentID,
+          run_id: event.data.runID,
+          task_id: event.data.taskID,
+          attempt_id: event.data.attemptID,
+          mode: event.data.mode,
+          request: event.data.request,
+          result: event.data.result,
           time_created: DateTime.toEpochMillis(event.data.timestamp),
         })
         .run()

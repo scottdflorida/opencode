@@ -2977,6 +2977,40 @@ export type ServerOrchestrationCreateOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -3208,6 +3242,40 @@ export type ServerOrchestrationAddTaskOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -3350,6 +3418,40 @@ export type ServerOrchestrationAddDependencyOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -3490,6 +3592,40 @@ export type ServerOrchestrationStartOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -3628,6 +3764,40 @@ export type ServerOrchestrationCancelOutput = {
       readonly kind: string
       readonly status: "passed" | "failed" | "indeterminate"
       readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
       readonly time: number
     }>
     readonly reviews: ReadonlyArray<{
@@ -3772,6 +3942,40 @@ export type ServerOrchestrationAcceptOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -3914,6 +4118,40 @@ export type ServerOrchestrationRejectOutput = {
       readonly evidence: { readonly [x: string]: JsonValue }
       readonly time: number
     }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
+      readonly time: number
+    }>
     readonly reviews: ReadonlyArray<{
       readonly id: string
       readonly runID: string
@@ -4053,6 +4291,40 @@ export type ServerOrchestrationRetryOutput = {
       readonly kind: string
       readonly status: "passed" | "failed" | "indeterminate"
       readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
       readonly time: number
     }>
     readonly reviews: ReadonlyArray<{
@@ -4285,6 +4557,40 @@ export type ServerOrchestrationGetOutput = {
       readonly kind: string
       readonly status: "passed" | "failed" | "indeterminate"
       readonly evidence: { readonly [x: string]: JsonValue }
+      readonly time: number
+    }>
+    readonly judgments: ReadonlyArray<{
+      readonly id: string
+      readonly runID: string
+      readonly taskID: string
+      readonly attemptID: string
+      readonly mode: "shadow"
+      readonly request: {
+        readonly purpose: string
+        readonly state: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+        readonly question: {
+          readonly instructions: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          readonly criteria: {
+            readonly [x: string]: string | { readonly [x: string]: JsonValue } | ReadonlyArray<JsonValue> | null
+          }
+        }
+        readonly fallback: string
+      }
+      readonly result: {
+        readonly status: "valid" | "invalid" | "unavailable" | "timed_out"
+        readonly provider: string
+        readonly model: string
+        readonly requestDigest: string
+        readonly cached: boolean
+        readonly latencyMs: number
+        readonly answer?: {
+          readonly choice: string
+          readonly confidence: number
+          readonly probabilities: { readonly [x: string]: number }
+        }
+        readonly usage?: { readonly inputTokens: number; readonly outputTokens: number }
+        readonly errorCode?: string
+      }
       readonly time: number
     }>
     readonly reviews: ReadonlyArray<{

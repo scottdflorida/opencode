@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "adfce52e-37c5-446f-bdae-acbcd2d01d8d",
+  "id": "b9bce2b5-07d4-41fe-95cf-579f643d8b5b",
   "prevIds": [
-    "8b5f29ce-865b-4466-aef9-e9cabf754b01"
+    "adfce52e-37c5-446f-bdae-acbcd2d01d8d"
   ],
   "ddl": [
     {
@@ -48,6 +48,10 @@
     },
     {
       "name": "orchestration_evaluation",
+      "entityType": "tables"
+    },
+    {
+      "name": "orchestration_judgment",
       "entityType": "tables"
     },
     {
@@ -789,6 +793,86 @@
       "name": "time_created",
       "entityType": "columns",
       "table": "orchestration_evaluation"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "run_id",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "task_id",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "attempt_id",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "mode",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "request",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "result",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "time_created",
+      "entityType": "columns",
+      "table": "orchestration_judgment"
     },
     {
       "type": "text",
@@ -2211,6 +2295,51 @@
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
+      "name": "fk_orchestration_judgment_run_id_orchestration_run_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_judgment"
+    },
+    {
+      "columns": [
+        "task_id"
+      ],
+      "tableTo": "orchestration_task",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_orchestration_judgment_task_id_orchestration_task_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_judgment"
+    },
+    {
+      "columns": [
+        "attempt_id"
+      ],
+      "tableTo": "orchestration_attempt",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_orchestration_judgment_attempt_id_orchestration_attempt_id_fk",
+      "entityType": "fks",
+      "table": "orchestration_judgment"
+    },
+    {
+      "columns": [
+        "run_id"
+      ],
+      "tableTo": "orchestration_run",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
       "name": "fk_orchestration_review_run_id_orchestration_run_id_fk",
       "entityType": "fks",
       "table": "orchestration_review"
@@ -2597,6 +2726,15 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "orchestration_judgment_pk",
+      "table": "orchestration_judgment",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "orchestration_review_pk",
       "table": "orchestration_review",
       "entityType": "pks"
@@ -2824,6 +2962,24 @@
       "name": "orchestration_evaluation_attempt_created_idx",
       "entityType": "indexes",
       "table": "orchestration_evaluation"
+    },
+    {
+      "columns": [
+        {
+          "value": "attempt_id",
+          "isExpression": false
+        },
+        {
+          "value": "time_created",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "orchestration_judgment_attempt_created_idx",
+      "entityType": "indexes",
+      "table": "orchestration_judgment"
     },
     {
       "columns": [

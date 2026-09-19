@@ -146,6 +146,15 @@ export default function MissionControl(props: { directory: string }) {
     return selected()?.evaluations.filter((evaluation) => attemptIDs.has(evaluation.attemptID)) ?? []
   }
 
+  const judgments = (task: Task) => {
+    const attemptIDs = new Set(
+      selected()
+        ?.attempts.filter((attempt) => attempt.taskID === task.id)
+        .map((attempt) => attempt.id),
+    )
+    return selected()?.judgments.filter((judgment) => attemptIDs.has(judgment.attemptID)) ?? []
+  }
+
   return (
     <div class="h-full w-full overflow-auto bg-background-base text-text-base">
       <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
@@ -388,6 +397,29 @@ export default function MissionControl(props: { directory: string }) {
                                       </summary>
                                       <pre class="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-11-regular text-text-weak">
                                         {JSON.stringify(evaluation.evidence, null, 2)}
+                                      </pre>
+                                    </details>
+                                  )}
+                                </For>
+                              </div>
+                            </Show>
+                            <Show when={judgments(task).length > 0}>
+                              <div class="mt-4 flex flex-col gap-2">
+                                <For each={judgments(task)}>
+                                  {(judgment) => (
+                                    <details class="rounded-md border border-border-base bg-background-base p-3">
+                                      <summary class="cursor-pointer text-12-medium text-text-strong">
+                                        {missionControlCopy.judgment} · {judgment.result.status}
+                                        <Show when={judgment.result.answer?.choice}>
+                                          {(choice) => ` · ${choice()}`}
+                                        </Show>
+                                      </summary>
+                                      <pre class="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-11-regular text-text-weak">
+                                        {JSON.stringify(
+                                          { mode: judgment.mode, request: judgment.request, result: judgment.result },
+                                          null,
+                                          2,
+                                        )}
                                       </pre>
                                     </details>
                                   )}

@@ -40,8 +40,17 @@ export class RouteProfile extends Schema.Class<RouteProfile>("ConfigV2.Orchestra
   candidates: Candidate.pipe(Schema.Array),
 }) {}
 
+export class Judge extends Schema.Class<Judge>("ConfigV2.Orchestration.Judge")({
+  mode: Schema.Literals(["off", "shadow"]),
+  provider: Schema.Literal("jev").pipe(Schema.optional),
+  model: Schema.String.pipe(Schema.optional),
+  base_url: Schema.String.pipe(Schema.optional),
+  timeout_ms: Schema.Int.check(Schema.isGreaterThan(0)).pipe(Schema.optional),
+}) {}
+
 export class Info extends Schema.Class<Info>("ConfigV2.Orchestration")({
   default_route_profile: Schema.String.pipe(Schema.optional),
   max_concurrency: Schema.Int.check(Schema.isGreaterThan(0)).pipe(Schema.optional),
   route_profiles: Schema.Record(Schema.String, RouteProfile).pipe(Schema.optional),
+  judge: Judge.pipe(Schema.optional),
 }) {}

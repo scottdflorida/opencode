@@ -17,7 +17,7 @@ A result contains:
 - the validated typed value
 - confidence or uncertainty data when supported
 - judge identity and version
-- input and output digests
+- a stable request digest
 - latency and token or cost metadata
 - validation and fallback status
 
@@ -45,6 +45,25 @@ Poor uses include:
 
 ## Rollout
 
-The first integration should run in shadow mode. It records what Jev would have decided while deterministic policy remains authoritative. Compare agreement, downstream success, cost, and latency before allowing it to control any transition.
+The first integration runs in shadow mode. After a direct attempt finishes its deterministic checks, the controller sends Jev a compact attempt summary and asks it to choose `looks_ready` or `needs_attention`. The summary includes the task, selected model, check statuses, exit codes, and whether the worktree changed. It excludes patch contents, command output, worktree paths, and credentials.
+
+Every configured shadow request produces a durable judgment record. The record contains the bounded request, request digest, validated answer and probability distribution, resolved model version, latency, token usage, cache status, and a stable error code when the provider is unavailable or its response is invalid. Mission Control shows the record beside the deterministic evidence. The result does not change task state. Tasks still stop at `awaiting_review` until a person accepts or rejects them.
+
+Enable the integration in `opencode.jsonc` and keep the API key in the server environment:
+
+```jsonc
+{
+  "orchestration": {
+    "judge": {
+      "mode": "shadow",
+      "provider": "jev",
+      "model": "jev-latest",
+      "timeout_ms": 10000,
+    },
+  },
+}
+```
+
+Set `TYPESAFE_API_KEY` outside committed configuration. Set `mode` to `off` or remove `judge` to disable provider calls.
 
 Judgments should be cached by request digest when their evidence and policy are unchanged. This reduces cost and makes repeated orchestration replay stable.

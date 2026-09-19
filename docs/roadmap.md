@@ -43,6 +43,8 @@ Status: complete. Operators can create explicit task graphs, attach baseline-awa
 
 Exit condition: generated plans and judgments remain bounded, replayable, and overridable.
 
+Status: in progress. Jev now runs as an explicit, server-side shadow Choice judge after deterministic attempt evaluation. Requests and validated outcomes are durable and visible in Mission Control, with identical valid requests cached in memory. The typed planner, calibration report, durable cross-process cache, and any decision authority remain open.
+
 ## Phase 4: add harness execution and quota-aware frontier routing
 
 - Implement Claude, Codex, Cursor, and Copilot harness adapters.

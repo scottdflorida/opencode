@@ -115,6 +115,21 @@ describe("Config", () => {
     }),
   )
 
+  it.effect("preserves v2 orchestration policy in a mixed legacy config", () =>
+    Effect.sync(() => {
+      expect(
+        ConfigMigrateV1.migrate({
+          provider: {},
+          orchestration: {
+            judge: { mode: "shadow", provider: "jev", model: "jev-latest", timeout_ms: 10_000 },
+          },
+        }).orchestration,
+      ).toEqual({
+        judge: { mode: "shadow", provider: "jev", model: "jev-latest", timeout_ms: 10_000 },
+      })
+    }),
+  )
+
   it.effect("migrates v1 command configuration", () =>
     Effect.sync(() => {
       expect(

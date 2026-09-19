@@ -159,3 +159,27 @@ export const OrchestrationReviewTable = sqliteTable(
   },
   (table) => [index("orchestration_review_attempt_created_idx").on(table.attempt_id, table.time_created)],
 )
+
+export const OrchestrationJudgmentTable = sqliteTable(
+  "orchestration_judgment",
+  {
+    id: text().$type<Orchestration.JudgmentID>().primaryKey(),
+    run_id: text()
+      .$type<Orchestration.RunID>()
+      .notNull()
+      .references(() => OrchestrationRunTable.id, { onDelete: "cascade" }),
+    task_id: text()
+      .$type<Orchestration.TaskID>()
+      .notNull()
+      .references(() => OrchestrationTaskTable.id, { onDelete: "cascade" }),
+    attempt_id: text()
+      .$type<Orchestration.AttemptID>()
+      .notNull()
+      .references(() => OrchestrationAttemptTable.id, { onDelete: "cascade" }),
+    mode: text().$type<"shadow">().notNull(),
+    request: text({ mode: "json" }).$type<Orchestration.Judgment["request"]>().notNull(),
+    result: text({ mode: "json" }).$type<Orchestration.Judgment["result"]>().notNull(),
+    time_created: integer().notNull(),
+  },
+  (table) => [index("orchestration_judgment_attempt_created_idx").on(table.attempt_id, table.time_created)],
+)

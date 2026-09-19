@@ -14,6 +14,7 @@ import {
   OrchestrationAttemptTable,
   OrchestrationDependencyTable,
   OrchestrationEvaluationTable,
+  OrchestrationJudgmentTable,
   OrchestrationRouteDecisionTable,
   OrchestrationReviewTable,
   OrchestrationRunTable,
@@ -120,6 +121,15 @@ export interface Interface {
     readonly decision: Orchestration.ReviewDecision
     readonly note?: string
   }) => Effect.Effect<Orchestration.Review, NotFoundError>
+  readonly recordJudgment: (input: {
+    readonly id?: Orchestration.JudgmentID
+    readonly runID: RunID
+    readonly taskID: TaskID
+    readonly attemptID: AttemptID
+    readonly mode: "shadow"
+    readonly request: Orchestration.Judgment["request"]
+    readonly result: Orchestration.Judgment["result"]
+  }) => Effect.Effect<Orchestration.Judgment, NotFoundError>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Orchestration") {}
@@ -201,6 +211,13 @@ const layer = Layer.effect(
           .orderBy(asc(OrchestrationEvaluationTable.time_created), asc(OrchestrationEvaluationTable.id))
           .all()
           .pipe(Effect.orDie),
+        judgments: db
+          .select()
+          .from(OrchestrationJudgmentTable)
+          .where(eq(OrchestrationJudgmentTable.run_id, runID))
+          .orderBy(asc(OrchestrationJudgmentTable.time_created), asc(OrchestrationJudgmentTable.id))
+          .all()
+          .pipe(Effect.orDie),
         reviews: db
           .select()
           .from(OrchestrationReviewTable)
@@ -234,6 +251,16 @@ const layer = Layer.effect(
           kind: row.kind,
           status: row.status,
           evidence: row.evidence,
+          time: DateTime.makeUnsafe(row.time_created),
+        })),
+        judgments: rows.judgments.map((row) => ({
+          id: row.id,
+          runID: row.run_id,
+          taskID: row.task_id,
+          attemptID: row.attempt_id,
+          mode: row.mode,
+          request: row.request,
+          result: row.result,
           time: DateTime.makeUnsafe(row.time_created),
         })),
         reviews: rows.reviews.map((row) => ({
@@ -420,6 +447,24 @@ const layer = Layer.effect(
           attemptID: input.attemptID,
           decision: input.decision,
           note: input.note,
+          timestamp: time,
+        })
+        return { ...input, id, time }
+      }),
+      recordJudgment: Effect.fn("Orchestration.recordJudgment")(function* (input) {
+        yield* getTask(input.runID, input.taskID)
+        const attempt = yield* getAttempt(input.runID, input.attemptID)
+        if (attempt.task_id !== input.taskID) yield* new NotFoundError({ resource: "attempt", id: input.attemptID })
+        const id = input.id ?? Orchestration.JudgmentID.create()
+        const time = yield* DateTime.now
+        yield* events.publish(Orchestration.JudgmentRecorded, {
+          judgmentID: id,
+          runID: input.runID,
+          taskID: input.taskID,
+          attemptID: input.attemptID,
+          mode: input.mode,
+          request: input.request,
+          result: input.result,
           timestamp: time,
         })
         return { ...input, id, time }

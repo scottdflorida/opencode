@@ -1,16 +1,20 @@
 export * as OrchestrationScheduler from "./scheduler"
 
-import { Cause, Context, DateTime, Effect, Exit, Layer, Schema } from "effect"
+import { Cause, Context, DateTime, Effect, Exit, Layer, Option, Schema } from "effect"
 import { Location } from "@opencode-ai/schema/location"
-import { AttemptID, Detail, ReviewDecision, Run, RunID, Task, TaskID } from "@opencode-ai/schema/orchestration"
+import { Attempt, AttemptID, Detail, ReviewDecision, Run, RunID, Task, TaskID } from "@opencode-ai/schema/orchestration"
 import { Config } from "../config"
 import { makeGlobalNode } from "../effect/app-node"
 import { LocationServiceMap } from "../location-service-map"
 import { SessionV2 } from "../session"
 import { SessionRunCoordinator } from "../session/run-coordinator"
+import { TypedJudge } from "../typed-judge"
 import { Orchestration } from "../orchestration"
 import { OrchestrationExecutor } from "./executor"
 import { OrchestrationRouting } from "./routing"
+
+const maximumJudgmentTextCharacters = 8_000
+const maximumJudgmentEvaluations = 64
 
 export class OperationError extends Schema.TaggedErrorClass<OperationError>()("Orchestration.OperationError", {
   operation: Schema.Literals(["start", "cancel", "accept", "reject", "retry"]),
@@ -47,6 +51,29 @@ const layer = Layer.effect(
     const locations = yield* LocationServiceMap.Service
     const sessions = yield* SessionV2.Service
     const sources = new Map<RunID, Location.Ref>()
+
+    const recordShadowJudgment = Effect.fn("OrchestrationScheduler.recordShadowJudgment")(function* (
+      run: Run,
+      task: Task,
+      attemptID: AttemptID,
+      candidate: NonNullable<Attempt["candidate"]>,
+      evaluations: ReadonlyArray<OrchestrationExecutor.Evaluation>,
+      source: Location.Ref,
+    ) {
+      const request = attemptReviewRequest(run, task, candidate, evaluations)
+      const result = yield* TypedJudge.Service.use((judge) => judge.choice(request)).pipe(
+        Effect.provide(locations.get(source)),
+      )
+      if (Option.isNone(result)) return
+      yield* orchestration.recordJudgment({
+        runID: run.id,
+        taskID: task.id,
+        attemptID,
+        mode: "shadow",
+        request,
+        result: result.value,
+      })
+    })
 
     const executeTask = Effect.fn("OrchestrationScheduler.executeTask")(function* (
       run: Run,
@@ -118,14 +145,24 @@ const layer = Layer.effect(
 
       const evaluated = yield* executor.execute({ run, task, prepared: prepared.value, source }).pipe(Effect.exit)
       if (Exit.isFailure(evaluated)) {
+        const evaluation = {
+          kind: "execution",
+          status: "failed",
+          evidence: { message: errorMessage(evaluated.cause) },
+        } as const
         yield* orchestration.recordEvaluation({
           runID: run.id,
           taskID: task.id,
           attemptID: attempt.id,
-          kind: "execution",
-          status: "failed",
-          evidence: { message: errorMessage(evaluated.cause) },
+          ...evaluation,
         })
+        yield* recordShadowJudgment(run, task, attempt.id, resolution.selected, [evaluation], source).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logWarning("Shadow judgment failed", cause).pipe(
+              Effect.annotateLogs({ runID: run.id, taskID: task.id, attemptID: attempt.id }),
+            ),
+          ),
+        )
         yield* completeAttempt(orchestration, run.id, task.id, attempt.id, "failed")
         return
       }
@@ -147,6 +184,13 @@ const layer = Layer.effect(
             ...evaluation,
           }),
         { discard: true },
+      )
+      yield* recordShadowJudgment(run, task, attempt.id, resolution.selected, evaluated.value, source).pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Shadow judgment failed", cause).pipe(
+            Effect.annotateLogs({ runID: run.id, taskID: task.id, attemptID: attempt.id }),
+          ),
+        ),
       )
       yield* completeAttempt(
         orchestration,
@@ -386,6 +430,83 @@ function finishFailure(
 function errorMessage(cause: Cause.Cause<unknown>) {
   const error = Cause.squash(cause)
   return error instanceof Error ? error.message : String(error)
+}
+
+export function attemptReviewRequest(
+  run: Run,
+  task: Task,
+  candidate: NonNullable<Attempt["candidate"]>,
+  evaluations: ReadonlyArray<OrchestrationExecutor.Evaluation>,
+) {
+  return {
+    purpose: "attempt_review",
+    state: {
+      objective: run.objective.slice(0, maximumJudgmentTextCharacters),
+      task: {
+        title: task.title.slice(0, maximumJudgmentTextCharacters),
+        description: task.description?.slice(0, maximumJudgmentTextCharacters) ?? null,
+      },
+      route: judgmentRoute(candidate),
+      evaluations: evaluations.slice(0, maximumJudgmentEvaluations).map((evaluation) => ({
+        kind: evaluation.kind.slice(0, maximumJudgmentTextCharacters),
+        status: evaluation.status,
+        exitCode: typeof evaluation.evidence.exitCode === "number" ? evaluation.evidence.exitCode : null,
+        baselineExitCode:
+          typeof evaluation.evidence.baseline === "object" &&
+          evaluation.evidence.baseline !== null &&
+          "exitCode" in evaluation.evidence.baseline &&
+          typeof evaluation.evidence.baseline.exitCode === "number"
+            ? evaluation.evidence.baseline.exitCode
+            : null,
+        changed:
+          evaluation.kind === "workspace"
+            ? typeof evaluation.evidence.patch === "string" && evaluation.evidence.patch.length > 0
+            : null,
+        truncated: evaluation.evidence.truncated === true,
+      })),
+      inputTruncated:
+        run.objective.length > maximumJudgmentTextCharacters ||
+        task.title.length > maximumJudgmentTextCharacters ||
+        (task.description?.length ?? 0) > maximumJudgmentTextCharacters ||
+        evaluations.length > maximumJudgmentEvaluations ||
+        evaluations.some((evaluation) => evaluation.kind.length > maximumJudgmentTextCharacters) ||
+        judgmentRouteInputTruncated(candidate),
+    },
+    question: {
+      instructions:
+        "Classify whether this coding attempt looks ready for routine human review or needs extra attention. Use only the supplied task, route, and evaluation summary. A failed check, execution failure, missing change, or indeterminate evidence should favor needs_attention.",
+      criteria: {
+        looks_ready: "The attempt has a change and the available deterministic checks support routine review.",
+        needs_attention:
+          "The evidence is failed, indeterminate, missing, contradictory, or suggests closer investigation before acceptance.",
+      },
+    },
+    fallback: "needs_attention",
+  } as const
+}
+
+function judgmentRoute(candidate: NonNullable<Attempt["candidate"]>): Record<string, string | null> {
+  if (candidate.type === "direct")
+    return {
+      type: candidate.type,
+      provider: candidate.providerID.slice(0, maximumJudgmentTextCharacters),
+      model: candidate.modelID.slice(0, maximumJudgmentTextCharacters),
+      variant: candidate.variant?.slice(0, maximumJudgmentTextCharacters) ?? null,
+    }
+  return {
+    type: candidate.type,
+    harness: candidate.harnessID.slice(0, maximumJudgmentTextCharacters),
+    model: candidate.modelID.slice(0, maximumJudgmentTextCharacters),
+    effort: candidate.effort?.slice(0, maximumJudgmentTextCharacters) ?? null,
+  }
+}
+
+function judgmentRouteInputTruncated(candidate: NonNullable<Attempt["candidate"]>) {
+  const values =
+    candidate.type === "direct"
+      ? [candidate.providerID, candidate.modelID, candidate.variant]
+      : [candidate.harnessID, candidate.modelID, candidate.effort]
+  return values.some((value) => (value?.length ?? 0) > maximumJudgmentTextCharacters)
 }
 
 export const node = makeGlobalNode({

@@ -37,6 +37,7 @@ import { BuiltInTools } from "./tool/builtins"
 import { ReadToolFileSystem } from "./tool/read-filesystem"
 import { ToolRegistry } from "./tool/registry"
 import { ToolOutputStore } from "./tool-output-store"
+import { TypedJudge } from "./typed-judge"
 
 export { LocationServiceMap } from "./location-service-map"
 
@@ -45,6 +46,7 @@ export const locationServices = LayerNode.group([
   Policy.node,
   Config.node,
   OrchestrationRouting.node,
+  TypedJudge.node,
   AgentV2.node,
   CommandV2.node,
   Reference.node,

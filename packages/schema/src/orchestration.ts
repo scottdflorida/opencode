@@ -7,6 +7,7 @@ import { Location } from "./location"
 import { ProjectID } from "./project-id"
 import { DateTimeUtcFromMillis, optional, statics } from "./schema"
 import { SessionID } from "./session-id"
+import { TypedJudge } from "./typed-judge"
 
 const identifier = <Brand extends string>(prefix: string, brand: Brand) =>
   Schema.String.check(Schema.isStartsWith(prefix)).pipe(
@@ -31,6 +32,9 @@ export type EvaluationID = typeof EvaluationID.Type
 
 export const ReviewID = identifier("review_", "Orchestration.ReviewID")
 export type ReviewID = typeof ReviewID.Type
+
+export const JudgmentID = identifier("judgment_", "Orchestration.JudgmentID")
+export type JudgmentID = typeof JudgmentID.Type
 
 export const RunStatus = Schema.Literals(["draft", "active", "suspended", "completed", "cancelled"])
 export type RunStatus = typeof RunStatus.Type
@@ -276,6 +280,18 @@ export const Review = Schema.Struct({
 }).annotate({ identifier: "Orchestration.Review" })
 export interface Review extends Schema.Schema.Type<typeof Review> {}
 
+export const Judgment = Schema.Struct({
+  id: JudgmentID,
+  runID: RunID,
+  taskID: TaskID,
+  attemptID: AttemptID,
+  mode: Schema.Literal("shadow"),
+  request: TypedJudge.ChoiceRequest,
+  result: TypedJudge.ChoiceResult,
+  time: DateTimeUtcFromMillis,
+}).annotate({ identifier: "Orchestration.Judgment" })
+export interface Judgment extends Schema.Schema.Type<typeof Judgment> {}
+
 export const Detail = Schema.Struct({
   run: Run,
   tasks: Schema.Array(Task),
@@ -283,6 +299,7 @@ export const Detail = Schema.Struct({
   attempts: Schema.Array(Attempt),
   routeDecisions: Schema.Array(RouteDecision),
   evaluations: Schema.Array(Evaluation),
+  judgments: Schema.Array(Judgment),
   reviews: Schema.Array(Review),
 }).annotate({ identifier: "Orchestration.Detail" })
 export interface Detail extends Schema.Schema.Type<typeof Detail> {}
@@ -403,6 +420,20 @@ export const ReviewRecorded = Event.define({
   },
 })
 
+export const JudgmentRecorded = Event.define({
+  type: "orchestration.judgment.recorded",
+  ...durable,
+  schema: {
+    ...base,
+    judgmentID: JudgmentID,
+    taskID: TaskID,
+    attemptID: AttemptID,
+    mode: Schema.Literal("shadow"),
+    request: TypedJudge.ChoiceRequest,
+    result: TypedJudge.ChoiceResult,
+  },
+})
+
 export const Definitions = Event.inventory(
   RunCreated,
   RunStatusChanged,
@@ -414,6 +445,7 @@ export const Definitions = Event.inventory(
   AttemptStatusChanged,
   RouteDecided,
   EvaluationRecorded,
+  JudgmentRecorded,
   ReviewRecorded,
 )
 

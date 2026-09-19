@@ -81,6 +81,35 @@ describe("Orchestration", () => {
         status: "passed",
         evidence: { command: "bun typecheck", exitCode: 0 },
       })
+      yield* orchestration.recordJudgment({
+        runID: run.id,
+        taskID: inspect.id,
+        attemptID: attempt.id,
+        mode: "shadow",
+        request: {
+          purpose: "attempt_review",
+          state: { task: "Inspect capacity", check: "passed" },
+          question: {
+            instructions: "Does this attempt look ready for review?",
+            criteria: { looks_ready: null, needs_attention: null },
+          },
+          fallback: "needs_attention",
+        },
+        result: {
+          status: "valid",
+          provider: "jev",
+          model: "jev-1.13.0",
+          requestDigest: "abc123",
+          cached: false,
+          latencyMs: 110,
+          answer: {
+            choice: "looks_ready",
+            confidence: 0.8,
+            probabilities: { looks_ready: 0.9, needs_attention: 0.1 },
+          },
+          usage: { inputTokens: 100, outputTokens: 8 },
+        },
+      })
       yield* orchestration.recordReview({
         runID: run.id,
         taskID: inspect.id,
@@ -100,6 +129,14 @@ describe("Orchestration", () => {
       expect(detail.routeDecisions).toMatchObject([{ resolution: { status: "selected", profile: "frontier" } }])
       expect(detail.evaluations).toMatchObject([
         { attemptID: attempt.id, kind: "typecheck", status: "passed", evidence: { exitCode: 0 } },
+      ])
+      expect(detail.judgments).toMatchObject([
+        {
+          attemptID: attempt.id,
+          mode: "shadow",
+          request: { purpose: "attempt_review", fallback: "needs_attention" },
+          result: { status: "valid", provider: "jev", answer: { choice: "looks_ready" } },
+        },
       ])
       expect(detail.reviews).toMatchObject([{ attemptID: attempt.id, decision: "accepted", note: "Checks passed" }])
       expect(yield* orchestration.list({ projectID })).toHaveLength(1)

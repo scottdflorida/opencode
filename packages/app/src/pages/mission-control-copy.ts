@@ -23,6 +23,7 @@ export const missionControlCopy = {
   noTasks: "Add at least one task before starting this run.",
   inspectSession: "Inspect session",
   route: "Route",
+  judgment: "Jev shadow",
   back: "Back",
   accept: "Accept",
   reject: "Reject",

@@ -3,6 +3,7 @@ export * as ConfigV1 from "./config"
 import { Schema } from "effect"
 import { NonNegativeInt, PositiveInt, type DeepMutable } from "../../schema"
 import { ConfigExperimental } from "../../config/experimental"
+import { ConfigOrchestration } from "../../config/orchestration"
 import { ConfigReference } from "../../config/reference"
 import { ConfigAgentV1 } from "./agent"
 import { ConfigAttachmentV1 } from "./attachment"
@@ -133,6 +134,7 @@ export const Info = Schema.Struct({
   enterprise: Schema.optional(
     Schema.Struct({ url: Schema.optional(Schema.String).annotate({ description: "Enterprise URL" }) }),
   ),
+  orchestration: Schema.optional(ConfigOrchestration.Info),
   tool_output: Schema.optional(
     Schema.Struct({
       max_lines: Schema.optional(PositiveInt).annotate({
