@@ -120,6 +120,45 @@ export const Synthetic = Event.define({
 })
 export type Synthetic = typeof Synthetic.Type
 
+export const ControllerText = Event.define({
+  type: "session.next.controller.text",
+  ...options,
+  schema: {
+    ...Base,
+    messageID: SessionMessage.ID,
+    text: Schema.String,
+    kind: Schema.Literals(["summary", "milestone", "transcript"]),
+  },
+})
+export type ControllerText = typeof ControllerText.Type
+
+export const ControllerPart = Event.define({
+  type: "session.next.controller.part",
+  ...options,
+  schema: {
+    ...Base,
+    messageID: SessionMessage.ID,
+    kind: Schema.Literals(["clarification", "plan", "task", "replan", "human_request", "delivery_review", "integration"]),
+    title: Schema.String,
+    summary: Schema.String,
+    detail: Schema.Record(Schema.String, Schema.Unknown),
+  },
+})
+export type ControllerPart = typeof ControllerPart.Type
+
+export const ControllerPartUpdated = Event.define({
+  type: "session.next.controller.part.updated",
+  ...options,
+  schema: {
+    ...Base,
+    messageID: SessionMessage.ID,
+    title: Schema.String,
+    summary: Schema.String,
+    detail: Schema.Record(Schema.String, Schema.Unknown),
+  },
+})
+export type ControllerPartUpdated = typeof ControllerPartUpdated.Type
+
 export namespace Shell {
   export const Started = Event.define({
     type: "session.next.shell.started",
@@ -453,6 +492,9 @@ export const DurableDefinitions = Event.inventory(
   PromptAdmitted,
   ContextUpdated,
   Synthetic,
+  ControllerText,
+  ControllerPart,
+  ControllerPartUpdated,
   Shell.Started,
   Shell.Ended,
   Step.Started,
@@ -484,6 +526,9 @@ export const Definitions = Event.inventory(
   PromptAdmitted,
   ContextUpdated,
   Synthetic,
+  ControllerText,
+  ControllerPart,
+  ControllerPartUpdated,
   Shell.Started,
   Shell.Ended,
   Step.Started,

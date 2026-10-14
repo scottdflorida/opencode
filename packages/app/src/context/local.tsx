@@ -68,8 +68,13 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const settings = useSettings()
 
     const id = createMemo(() => params.id || undefined)
-    const list = createMemo(() => sync().data.agent.filter((item) => item.mode !== "subagent" && !item.hidden))
-    const agentsVisible = createMemo(() => settings.visibility.customAgents() || hasCustomAgent(list()))
+    const list = createMemo(() => {
+      const available = sync().data.agent.filter((item) => item.mode !== "subagent" && !item.hidden)
+      if (available.some((item) => item.name === "orchestrate")) return available
+      const build = available.find((item) => item.name === "build") ?? available[0]
+      return build ? [...available, { ...build, name: "orchestrate", description: "Plan and deliver an assignment" }] : available
+    })
+    const agentsVisible = createMemo(() => settings.visibility.customAgents() || hasCustomAgent(list()) || list().some((item) => item.name === "orchestrate"))
     const connected = createMemo(() => new Set(providers.connected().map((item) => item.id)))
 
     const [saved, setSaved, , savedReady] = persisted(

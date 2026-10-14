@@ -10,6 +10,11 @@ export const SessionDurable = {
   schema: SessionEvent.Durable,
 } as const
 
+export const OrchestrationDurable = {
+  definitions: Event.durable(Orchestration.Definitions),
+  schema: Orchestration.Events,
+} as const
+
 export const Durable = Event.durable([
   ...Orchestration.Definitions,
   ...SessionV1.Event.Definitions.filter((definition) => definition.durable !== undefined),

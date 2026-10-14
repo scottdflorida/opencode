@@ -14,6 +14,8 @@ export const CreateInput = Schema.Struct({
   sourceDirectory: AbsolutePath,
   directory: AbsolutePath,
   name: optional(Schema.String),
+  revision: optional(Schema.String),
+  branch: optional(Schema.String),
 }).annotate({ identifier: "ProjectCopy.CreateInput" })
 export interface CreateInput extends Schema.Schema.Type<typeof CreateInput> {}
 

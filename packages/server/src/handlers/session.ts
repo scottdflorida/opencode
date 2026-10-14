@@ -165,6 +165,12 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
                     }),
                   ),
                 ),
+                Effect.catchTag("Session.OperationUnavailableError", (error) =>
+                  Effect.fail(new ServiceUnavailableError({
+                    message: `Session ${error.operation} is managed by orchestration`,
+                    service: `session.${error.operation}`,
+                  })),
+                ),
               ),
           }
         }),

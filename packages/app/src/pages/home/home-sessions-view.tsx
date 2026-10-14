@@ -53,6 +53,7 @@ export type HomeSessionsViewProps = {
   isOpenTab: (record: HomeSessionRecord) => boolean
   onCreateSession: () => void
   onOpenSession: (session: Session, options?: OpenSessionOptions) => void
+  onOpenLab: (directory: string) => void
   onArchiveSession: (session: Session) => Promise<void>
   onSetHoverTarget: (element: HTMLElement) => void
   onSetThumbTrack: (element: HTMLDivElement) => void
@@ -428,7 +429,8 @@ function HomeSessionRow(props: HomeSessionsViewProps & { record: HomeSessionReco
         data-component="home-session-row"
         class={`
           flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center gap-2 rounded-[6px] border-0
-          bg-transparent py-3 pl-3 pr-10 text-left text-v2-text-text-muted [font-weight:530]
+          bg-transparent py-3 pl-3 text-left text-v2-text-text-muted [font-weight:530]
+          ${props.record.labelAttention ? "pr-24" : "pr-10"}
           transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
           hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
         `}
@@ -449,10 +451,23 @@ function HomeSessionRow(props: HomeSessionsViewProps & { record: HomeSessionReco
           revealProjectOnHover={!!showProjectName()}
         />
         <HomeSessionTitle title={title()} showProjectName={!!showProjectName()} />
+        <Show when={props.record.session.id.startsWith("ses_orch_")}>
+          <span class="shrink-0 rounded bg-v2-background-bg-layer-01 px-1.5 py-0.5 text-11-medium text-v2-text-text-muted">{
+            props.record.runSummary?.status === "delivered"
+              ? `Delivered${props.record.runSummary.unintegrated ? " · not integrated" : ""}`
+              : `Run${props.record.runSummary?.totalTasks ? ` · ${props.record.runSummary.acceptedTasks}/${props.record.runSummary.totalTasks}` : ""}${props.record.attention ? props.record.labelAttention ? " · review requested" : " · waiting on you" : ""}`
+          }</span>
+        </Show>
+        <Show when={props.record.attention}>
+          <span class="max-w-44 truncate text-12-regular text-v2-text-text-muted" title={props.record.attention}>{props.record.attention}</span>
+        </Show>
         <Show when={showProjectName()}>
           <HomeSessionProjectName name={props.record.projectName} />
         </Show>
       </button>
+      <Show when={props.record.labelAttention}>
+        <button type="button" class="absolute right-2 z-10 rounded px-2 py-1 text-11-medium text-v2-text-text-base underline" onClick={() => props.onOpenLab(props.record.project.worktree)}>Label in Lab</button>
+      </Show>
       <Show when={SHOW_HOME_SESSION_ARCHIVE}>
         <div
           class={`

@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Bring model routing documentation up to date",
+    "description": "Update docs/models.md to describe the current implemented harness execution path and its provenance instead of saying harness execution is deferred to Phase 4. Verify the actual code before making claims. Keep direct execution and future capabilities clearly distinguished.",
+    "routeProfile": "cohort",
+    "capabilityTier": "complex",
+    "checks": [
+      {
+        "name": "stale-harness-text",
+        "command": "bun -e 'const text = await Bun.file(\"docs/models.md\").text(); if (text.includes(\"Harness execution is deferred to Phase 4\")) process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463840,
+      "updated": 1790159618506
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd3807300123jFk2jbKK9xQz",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-complex",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd3807300123jFk2jbKK9xQz"
+    },
+    "time": {
+      "created": 1790159585395,
+      "updated": 1790159618505,
+      "completed": 1790159618505
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd38075001zleRrHDIlWUstT",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+    "attemptID": "attempt_0cdd3807300123jFk2jbKK9xQz",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159583884,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159585394,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159583884,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159580808,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6136283136,
+          "cpuCount": 18,
+          "load1": 4.12255859375,
+          "load5": 4.15087890625,
+          "load15": 3.849609375
+        }
+      },
+      "requestedTier": "complex",
+      "selected": {
+        "id": "codex-luna-complex",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [
+        {
+          "candidateID": "codex-luna-routine",
+          "code": "tier_mismatch",
+          "message": "Candidate does not serve complex"
+        }
+      ],
+      "capacityCapturedAt": 1790159583884
+    },
+    "time": 1790159585397
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd401c80013lyjDtnCF9hRXC",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+      "attemptID": "attempt_0cdd3807300123jFk2jbKK9xQz",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd3-872b-7a12-ad2f-f29b9e5a8999",
+        "exitCode": 0,
+        "latencyMs": 32132,
+        "inputTokens": 266466,
+        "cachedInputTokens": 231424,
+        "outputTokens": 1214,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159618504
+    },
+    {
+      "id": "eval_0cdd401c8003D6OTbO9YlUfw23",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+      "attemptID": "attempt_0cdd3807300123jFk2jbKK9xQz",
+      "kind": "check:stale-harness-text",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'const text = await Bun.file(\"docs/models.md\").text(); if (text.includes(\"Harness execution is deferred to Phase 4\")) process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159618504
+    },
+    {
+      "id": "eval_0cdd401c9001OwD8n2q6CpvLVS",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a0001tumtT0mrsCh2Xl",
+      "attemptID": "attempt_0cdd3807300123jFk2jbKK9xQz",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd3807300123jFk2jbKK9xQz",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd3807300123jFk2jbKK9xQz",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 1,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 0
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/docs/models.md b/docs/models.md\nindex a5335b8ca..ab6866492 100644\n--- a/docs/models.md\n+++ b/docs/models.md\n@@ -16,7 +16,9 @@ An Agent may name a default route profile. A task or operator override may selec\n \n A direct candidate resolves to an OpenCode provider and model. It executes through the V2 Session runner and preserves the invariant of one explicit stream call per provider turn.\n \n-Phase 2 executes direct candidates through isolated V2 Sessions. The selected provider, model, and variant are pinned to the attempt before execution begins.\n+The scheduler resolves the task's configured route profile against the latest capacity snapshot and walks candidates in profile order. The selected candidate is recorded on an attempt before execution. For a direct candidate, the executor creates a Git worktree under the orchestration data directory, creates a V2 Session in that worktree with the selected provider, model, and optional variant, admits the task prompt, and resumes the Session. The prompt includes the run objective and task description and asks the agent to leave the worktree ready for review without committing or merging.\n+\n+After the Session finishes, configured checks run against both the source directory and attempt worktree by default. Their command, exit code, bounded stdout and stderr, and baseline result are recorded as evaluation evidence. The executor also captures the attempt worktree patch (bounded to 512 KiB) as workspace evidence. The attempt retains its selected candidate, Session ID, and Location, while route decisions and evaluations are recorded separately. This is direct OpenCode execution provenance; it does not imply that an external harness ran.\n \n Local inference servers can participate through configured OpenAI-compatible providers. Their health should be observed separately from paid-provider capacity.\n \n@@ -26,7 +28,7 @@ A harness candidate invokes an installed coding agent such as Claude Code, Codex\n \n Harnesses are not represented as synthetic OpenCode providers. They can contain their own tool loop and authentication behavior, which must remain visible in provenance.\n \n-Harness execution is deferred to Phase 4. If a Phase 2 route selects a harness candidate, the scheduler records the route and a failed attempt with an explicit unsupported-executor evaluation.\n+Harness candidates are currently accepted by route configuration and participate in route selection and capacity eligibility. If the scheduler selects one, it records the route decision and creates an attempt containing the selected harness, model, and optional effort, then marks that attempt failed with the message `Harness execution is not available in Phase 2`. No external process is launched, and no harness transcript or artifact provenance is produced. Direct model execution described above is implemented; invoking installed external harnesses remains future work.\n \n ## Resolution order\n \n",
+        "truncated": false
+      },
+      "time": 1790159618505
+    }
+  ]
+}

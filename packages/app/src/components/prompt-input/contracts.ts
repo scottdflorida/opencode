@@ -2,6 +2,7 @@ import type { useLocal } from "@/context/local"
 import type { Prompt, usePrompt } from "@/context/prompt"
 import type { PromptInputHistory } from "./history-store"
 import type { FollowupDraft } from "./submit"
+import type { Orchestration } from "@opencode-ai/schema/orchestration"
 
 export type PromptInputState = ReturnType<typeof usePrompt>
 
@@ -11,6 +12,17 @@ export type PromptInputSubmission = {
 }
 
 export type PromptInputControls = {
+  orchestration: {
+    policies: Orchestration.PolicySnapshot[]
+    defaultPolicy?: string
+    policy?: string
+    selectPolicy: (name: string) => void
+    minConfidence?: number
+    selectMinConfidence: (value: number | undefined) => void
+    judge: "policy" | "jev" | "llm" | "experiment"
+    selectJudge: (provider: "policy" | "jev" | "llm" | "experiment") => void
+    loading: boolean
+  }
   agents: {
     available: { name: string; hidden?: boolean; mode: string }[]
     options: string[]

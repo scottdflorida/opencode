@@ -4,6 +4,7 @@ import { type Accessor, createEffect, createMemo, createResource, onCleanup } fr
 import { createStore } from "solid-js/store"
 import type { PromptInputState } from "@/components/prompt-input"
 import { useSync } from "@/context/sync"
+import { useLayout } from "@/context/layout"
 import { getSessionHandoff, setSessionHandoff } from "@/pages/session/handoff"
 import type { SessionComposerController } from "./session-composer-state"
 
@@ -40,6 +41,7 @@ export function createSessionComposerRegionController(input: {
   setDockRef: (el: HTMLDivElement) => void
 }) {
   const sync = useSync()
+  const layout = useLayout()
   const [store, setStore] = createStore({
     ready: input.ready() || input.state.dock(),
     height: 320,
@@ -121,6 +123,14 @@ export function createSessionComposerRegionController(input: {
 
   return {
     state: input.state,
+    sessionID: input.sessionID,
+    openReview: () => {
+      const key = input.sessionKey()
+      const view = layout.view(key)
+      if (view.review.mode() === "git") view.review.setMode("delivery")
+      view.reviewPanel.open()
+      layout.tabs(key).setActive("review")
+    },
     centered: input.centered,
     todo: input.todo,
     followup: input.followup,

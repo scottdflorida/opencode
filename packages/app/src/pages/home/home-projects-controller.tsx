@@ -14,9 +14,12 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { createResource } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { HomeController } from "./home-controller"
+import { useNavigate } from "@solidjs/router"
+import { base64Encode } from "@opencode-ai/core/util/encode"
 
 export function createHomeProjectsController(home: HomeController) {
   const platform = usePlatform()
+  const navigate = useNavigate()
   const pickDirectory = useDirectoryPicker()
   const dialog = useDialog()
   const language = useLanguage()
@@ -119,6 +122,10 @@ export function createHomeProjectsController(home: HomeController) {
       },
     },
     utility: {
+      lab: () => {
+        const directory = home.selection.value().directory ?? home.project.list()[0]?.worktree
+        if (directory) navigate(`/lab/${base64Encode(directory)}`)
+      },
       settings: openSettings,
       help: () => platform.openExternal("https://opencode.ai/desktop-feedback"),
     },

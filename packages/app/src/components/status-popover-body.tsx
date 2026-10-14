@@ -5,7 +5,7 @@ import { Switch } from "@opencode-ai/ui/switch"
 import { Tabs } from "@opencode-ai/ui/tabs"
 import { showToast } from "@/utils/toast"
 import { useNavigate } from "@solidjs/router"
-import { type Accessor, createEffect, createMemo, For, type JSXElement, onCleanup, Show } from "solid-js"
+import { type Accessor, createEffect, createMemo, createResource, For, type JSXElement, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { ServerHealthIndicator, ServerRow } from "@/components/server/server-row"
 import { useLanguage } from "@/context/language"
@@ -16,7 +16,11 @@ import { type ServerHealth } from "@/utils/server-health"
 import { useGlobal } from "@/context/global"
 import { useSettings } from "@/context/settings"
 import { useMcpToggle } from "@/context/mcp"
-import { useServerProtocol } from "@/context/server-sdk"
+import { useServerProtocol, useServerSDK } from "@/context/server-sdk"
+import { useSDK } from "@/context/sdk"
+import { Location } from "@opencode-ai/schema/location"
+import { Orchestration } from "@opencode-ai/schema/orchestration"
+import { DateTime, Schema } from "effect"
 
 const pluginEmptyMessage = (value: string, file: string): JSXElement => {
   const parts = value.split(file)
@@ -259,6 +263,22 @@ export function StatusPopoverBody(props: { shown: Accessor<boolean> }) {
   const navigate = useNavigate()
   const settings = useSettings()
   const protocol = useServerProtocol()
+  const sdk = useSDK()
+  const serverSDK = useServerSDK()
+  const [resources, resourceActions] = createResource(
+    () => props.shown() ? sdk().directory : undefined,
+    async (directory) => {
+      const query = new URLSearchParams({ "location[directory]": directory })
+      const response = await serverSDK().request(`/api/orchestration/resources?${query}`)
+      if (!response.ok) throw new Error(await response.text())
+      return (await Schema.decodeUnknownPromise(Location.response(Orchestration.ResourceObservation))(await response.json())).data
+    },
+  )
+  createEffect(() => {
+    if (!props.shown()) return
+    const timer = setInterval(() => void resourceActions.refetch(), 30_000)
+    onCleanup(() => clearInterval(timer))
+  })
 
   const fail = (err: unknown) => {
     showToast({
@@ -322,6 +342,7 @@ export function StatusPopoverBody(props: { shown: Accessor<boolean> }) {
             {lspCount() > 0 ? `${lspCount()} ` : ""}
             {language.t("status.popover.tab.lsp")}
           </Tabs.Trigger>
+          <Tabs.Trigger value="capacity" data-slot="tab" class="text-12-regular">Capacity</Tabs.Trigger>
           <Show when={protocol() === "v1"}>
             <Tabs.Trigger value="plugins" data-slot="tab" class="text-12-regular">
               {pluginCount() > 0 ? `${pluginCount()} ` : ""}
@@ -484,6 +505,42 @@ export function StatusPopoverBody(props: { shown: Accessor<boolean> }) {
                 </For>
               </Show>
             </div>
+          </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="capacity">
+          <div class="flex flex-col gap-3 px-3 pb-3 text-12-regular">
+            <Show when={resources()} fallback={<div class="rounded-md bg-background-base p-3">{resources.error ? "Capacity unavailable" : "Loading capacity…"}</div>}>
+              {(snapshot) => <>
+                <div class="rounded-md bg-background-base p-3">
+                  <div class="text-13-medium">Provider quota · {snapshot().quota.status}</div>
+                  <div class="text-text-weak">{Date.now() - DateTime.toEpochMillis(snapshot().quota.capturedAt) > 300_000 ? "Observation stale" : "Cached observation"}</div>
+                  <For each={snapshot().quota.meters}>
+                    {(meter) => <div class="mt-2 flex flex-col gap-1">
+                      <div class="flex justify-between gap-2"><span class="truncate">{meter.id}</span><span>{meter.remaining === undefined ? meter.state : `${Math.round(meter.remaining)}%`}</span></div>
+                      <Show when={meter.remaining !== undefined}>
+                        <div class="h-1.5 rounded-full bg-border-weak-base"><div class="h-full rounded-full bg-icon-success-base" style={{ width: `${Math.max(0, Math.min(100, meter.remaining ?? 0))}%` }} /></div>
+                      </Show>
+                      <Show when={meter.resetsAt}><span class="text-text-weak">Resets {new Date(DateTime.toEpochMillis(meter.resetsAt!)).toLocaleString()}</span></Show>
+                    </div>}
+                  </For>
+                </div>
+                <div class="rounded-md bg-background-base p-3">
+                  <div class="text-13-medium">Host</div>
+                  <div>{(snapshot().host.freeMemoryBytes / 1_073_741_824).toFixed(1)} GiB free of {(snapshot().host.totalMemoryBytes / 1_073_741_824).toFixed(1)} GiB</div>
+                  <div class="text-text-weak">{snapshot().host.cpuCount} CPUs · load {snapshot().host.load1.toFixed(1)} / {snapshot().host.load5.toFixed(1)} / {snapshot().host.load15.toFixed(1)}</div>
+                </div>
+                <Show when={snapshot().harnesses}>
+                  {(observed) => <div class="rounded-md bg-background-base p-3">
+                    <div class="text-13-medium">Coding harnesses</div>
+                    <div class="text-text-weak">{Date.now() - DateTime.toEpochMillis(observed().capturedAt) > 300_000 ? "Observation stale" : "Cached observation"}</div>
+                    <For each={observed().harnesses}>{(harness) => <div class="mt-1 flex justify-between gap-2">
+                      <span>{harness.id}{harness.models?.length ? ` · ${harness.models.length} models` : ""}</span><span>{harness.state}</span>
+                    </div>}</For>
+                  </div>}
+                </Show>
+              </>}
+            </Show>
           </div>
         </Tabs.Content>
 

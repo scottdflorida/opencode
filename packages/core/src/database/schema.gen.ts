@@ -92,7 +92,10 @@ export default {
           \`run_id\` text NOT NULL,
           \`task_id\` text NOT NULL,
           \`status\` text NOT NULL,
+          \`kind\` text DEFAULT 'initial' NOT NULL,
           \`candidate\` text,
+          \`verdict\` text,
+          \`feedback\` text,
           \`session_id\` text,
           \`directory\` text,
           \`workspace_id\` text,
@@ -102,6 +105,24 @@ export default {
           CONSTRAINT \`fk_orchestration_attempt_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
           CONSTRAINT \`fk_orchestration_attempt_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
           CONSTRAINT \`fk_orchestration_attempt_session_id_session_id_fk\` FOREIGN KEY (\`session_id\`) REFERENCES \`session\`(\`id\`) ON DELETE SET NULL
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_delivery\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`plan_id\` text,
+          \`base_head\` text NOT NULL,
+          \`head\` text NOT NULL,
+          \`changed_files\` integer NOT NULL,
+          \`review\` text NOT NULL,
+          \`summary\` text,
+          \`commit_message\` text,
+          \`summary_generation\` text,
+          \`time_created\` integer NOT NULL,
+          \`time_delivered\` integer,
+          CONSTRAINT \`fk_orchestration_delivery_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_delivery_plan_id_orchestration_plan_id_fk\` FOREIGN KEY (\`plan_id\`) REFERENCES \`orchestration_plan\`(\`id\`)
         );
       `)
       yield* tx.run(`
@@ -131,6 +152,48 @@ export default {
         );
       `)
       yield* tx.run(`
+        CREATE TABLE \`orchestration_follow_up\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`objective\` text NOT NULL,
+          \`context\` text,
+          \`base_head\` text NOT NULL,
+          \`time_created\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_follow_up_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_human_request\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`task_id\` text,
+          \`kind\` text NOT NULL,
+          \`prompt\` text NOT NULL,
+          \`choices\` text DEFAULT '[]' NOT NULL,
+          \`assumption\` text,
+          \`status\` text NOT NULL,
+          \`answer\` text,
+          \`time_created\` integer NOT NULL,
+          \`time_answered\` integer,
+          CONSTRAINT \`fk_orchestration_human_request_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_human_request_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_integration\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`delivery_id\` text NOT NULL,
+          \`options\` text NOT NULL,
+          \`status\` text NOT NULL,
+          \`steps\` text DEFAULT '[]' NOT NULL,
+          \`time_created\` integer NOT NULL,
+          \`time_updated\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_integration_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_integration_delivery_id_orchestration_delivery_id_fk\` FOREIGN KEY (\`delivery_id\`) REFERENCES \`orchestration_delivery\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
         CREATE TABLE \`orchestration_judgment\` (
           \`id\` text PRIMARY KEY,
           \`run_id\` text NOT NULL,
@@ -143,6 +206,47 @@ export default {
           CONSTRAINT \`fk_orchestration_judgment_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
           CONSTRAINT \`fk_orchestration_judgment_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
           CONSTRAINT \`fk_orchestration_judgment_attempt_id_orchestration_attempt_id_fk\` FOREIGN KEY (\`attempt_id\`) REFERENCES \`orchestration_attempt\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_plan\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`output\` text NOT NULL,
+          \`generation\` text,
+          \`status\` text NOT NULL,
+          \`time_created\` integer NOT NULL,
+          \`time_applied\` integer,
+          CONSTRAINT \`fk_orchestration_plan_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_queued_follow_up\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`objective\` text NOT NULL,
+          \`context\` text,
+          \`status\` text NOT NULL,
+          \`time_created\` integer NOT NULL,
+          \`time_steered\` integer,
+          CONSTRAINT \`fk_orchestration_queued_follow_up_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_reassignment\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`task_id\` text NOT NULL,
+          \`after_attempt_id\` text NOT NULL,
+          \`options\` text NOT NULL,
+          \`selected\` text NOT NULL,
+          \`chooser\` text NOT NULL,
+          \`request\` text,
+          \`result\` text,
+          \`time_created\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_reassignment_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_reassignment_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_reassignment_after_attempt_id_orchestration_attempt_id_fk\` FOREIGN KEY (\`after_attempt_id\`) REFERENCES \`orchestration_attempt\`(\`id\`) ON DELETE CASCADE
         );
       `)
       yield* tx.run(`
@@ -175,27 +279,66 @@ export default {
       yield* tx.run(`
         CREATE TABLE \`orchestration_run\` (
           \`id\` text PRIMARY KEY,
+          \`session_id\` text,
           \`project_id\` text NOT NULL,
           \`objective\` text NOT NULL,
+          \`context\` text,
           \`status\` text NOT NULL,
+          \`policy\` text,
+          \`workspace\` text,
           \`retry_at\` integer,
+          \`source_directory\` text,
+          \`source_workspace_id\` text,
           \`time_created\` integer NOT NULL,
           \`time_updated\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_run_session_id_session_id_fk\` FOREIGN KEY (\`session_id\`) REFERENCES \`session\`(\`id\`) ON DELETE SET NULL,
           CONSTRAINT \`fk_orchestration_run_project_id_project_id_fk\` FOREIGN KEY (\`project_id\`) REFERENCES \`project\`(\`id\`) ON DELETE CASCADE
         );
       `)
       yield* tx.run(`
         CREATE TABLE \`orchestration_task\` (
           \`id\` text PRIMARY KEY,
+          \`kind\` text DEFAULT 'agent' NOT NULL,
           \`run_id\` text NOT NULL,
           \`title\` text NOT NULL,
           \`description\` text,
           \`route_profile\` text,
+          \`capability_tier\` text,
           \`checks\` text DEFAULT '[]' NOT NULL,
+          \`acceptance_criteria\` text DEFAULT '[]' NOT NULL,
           \`status\` text NOT NULL,
           \`time_created\` integer NOT NULL,
           \`time_updated\` integer NOT NULL,
           CONSTRAINT \`fk_orchestration_task_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_tier_recommendation\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`task_id\` text NOT NULL,
+          \`route_decision_id\` text NOT NULL,
+          \`explicit_tier\` text,
+          \`request\` text NOT NULL,
+          \`result\` text NOT NULL,
+          \`time_created\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_tier_recommendation_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_tier_recommendation_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_tier_recommendation_route_decision_id_orchestration_route_decision_id_fk\` FOREIGN KEY (\`route_decision_id\`) REFERENCES \`orchestration_route_decision\`(\`id\`) ON DELETE CASCADE
+        );
+      `)
+      yield* tx.run(`
+        CREATE TABLE \`orchestration_triage_label\` (
+          \`id\` text PRIMARY KEY,
+          \`run_id\` text NOT NULL,
+          \`task_id\` text NOT NULL,
+          \`attempt_id\` text NOT NULL,
+          \`decision\` text NOT NULL,
+          \`note\` text,
+          \`time_created\` integer NOT NULL,
+          CONSTRAINT \`fk_orchestration_triage_label_run_id_orchestration_run_id_fk\` FOREIGN KEY (\`run_id\`) REFERENCES \`orchestration_run\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_triage_label_task_id_orchestration_task_id_fk\` FOREIGN KEY (\`task_id\`) REFERENCES \`orchestration_task\`(\`id\`) ON DELETE CASCADE,
+          CONSTRAINT \`fk_orchestration_triage_label_attempt_id_orchestration_attempt_id_fk\` FOREIGN KEY (\`attempt_id\`) REFERENCES \`orchestration_attempt\`(\`id\`) ON DELETE CASCADE
         );
       `)
       yield* tx.run(`
@@ -348,6 +491,14 @@ export default {
           CONSTRAINT \`fk_session_share_session_id_session_id_fk\` FOREIGN KEY (\`session_id\`) REFERENCES \`session\`(\`id\`) ON DELETE CASCADE
         );
       `)
+      yield* tx.run(`
+        CREATE TABLE \`typed_judge_cache\` (
+          \`request_digest\` text PRIMARY KEY,
+          \`result\` text NOT NULL,
+          \`time_created\` integer NOT NULL,
+          \`expires_at\` integer NOT NULL
+        );
+      `)
       yield* tx.run(`CREATE UNIQUE INDEX \`event_aggregate_seq_idx\` ON \`event\` (\`aggregate_id\`,\`seq\`);`)
       yield* tx.run(`CREATE INDEX \`event_aggregate_type_seq_idx\` ON \`event\` (\`aggregate_id\`,\`type\`,\`seq\`);`)
       yield* tx.run(
@@ -357,13 +508,34 @@ export default {
         `CREATE INDEX \`orchestration_attempt_run_status_idx\` ON \`orchestration_attempt\` (\`run_id\`,\`status\`);`,
       )
       yield* tx.run(
+        `CREATE INDEX \`orchestration_delivery_run_created_idx\` ON \`orchestration_delivery\` (\`run_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
         `CREATE INDEX \`orchestration_dependency_ready_idx\` ON \`orchestration_dependency\` (\`run_id\`,\`depends_on_task_id\`,\`task_id\`);`,
       )
       yield* tx.run(
         `CREATE INDEX \`orchestration_evaluation_attempt_created_idx\` ON \`orchestration_evaluation\` (\`attempt_id\`,\`time_created\`);`,
       )
       yield* tx.run(
+        `CREATE INDEX \`orchestration_follow_up_run_created_idx\` ON \`orchestration_follow_up\` (\`run_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_human_request_run_status_idx\` ON \`orchestration_human_request\` (\`run_id\`,\`status\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_integration_run_created_idx\` ON \`orchestration_integration\` (\`run_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
         `CREATE INDEX \`orchestration_judgment_attempt_created_idx\` ON \`orchestration_judgment\` (\`attempt_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_plan_run_created_idx\` ON \`orchestration_plan\` (\`run_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_queued_follow_up_run_created_idx\` ON \`orchestration_queued_follow_up\` (\`run_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_reassignment_task_created_idx\` ON \`orchestration_reassignment\` (\`task_id\`,\`time_created\`);`,
       )
       yield* tx.run(
         `CREATE INDEX \`orchestration_review_attempt_created_idx\` ON \`orchestration_review\` (\`attempt_id\`,\`time_created\`);`,
@@ -379,6 +551,15 @@ export default {
       )
       yield* tx.run(
         `CREATE INDEX \`orchestration_task_run_status_idx\` ON \`orchestration_task\` (\`run_id\`,\`status\`);`,
+      )
+      yield* tx.run(
+        `CREATE UNIQUE INDEX \`orchestration_tier_recommendation_decision_idx\` ON \`orchestration_tier_recommendation\` (\`route_decision_id\`);`,
+      )
+      yield* tx.run(
+        `CREATE INDEX \`orchestration_tier_recommendation_task_created_idx\` ON \`orchestration_tier_recommendation\` (\`task_id\`,\`time_created\`);`,
+      )
+      yield* tx.run(
+        `CREATE UNIQUE INDEX \`orchestration_triage_label_attempt_idx\` ON \`orchestration_triage_label\` (\`attempt_id\`);`,
       )
       yield* tx.run(
         `CREATE UNIQUE INDEX \`permission_project_action_resource_idx\` ON \`permission\` (\`project_id\`,\`action\`,\`resource\`);`,

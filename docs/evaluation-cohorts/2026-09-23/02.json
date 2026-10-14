@@ -1,0 +1,248 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a583001sHJNik0CmzkEFZ",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Find extensions from basenames only",
+    "description": "In packages/core/src/util/path.ts, fix getFileExtension so dots in parent directories do not count and extensionless files or dotfiles return an empty string. Keep ordinary names such as archive.tar.gz returning gz. Add focused coverage.",
+    "routeProfile": "cohort",
+    "capabilityTier": "routine",
+    "checks": [
+      {
+        "name": "extension",
+        "command": "bun -e 'import { getFileExtension } from \"./packages/core/src/util/path.ts\"; if (getFileExtension(\"dir.name/file\") !== \"\" || getFileExtension(\".gitignore\") !== \"\" || getFileExtension(\"archive.tar.gz\") !== \"gz\") process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463811,
+      "updated": 1790159491209
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a583001sHJNik0CmzkEFZ",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-routine",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd1a5b8001KLugrTOU1XBQL8"
+    },
+    "time": {
+      "created": 1790159463864,
+      "updated": 1790159491208,
+      "completed": 1790159491208
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd1a5b9001VjQTjLWCuhnGNf",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a583001sHJNik0CmzkEFZ",
+    "attemptID": "attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159295608,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "not_observed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159463863,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159295608,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "not_observed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159460772,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 7203045376,
+          "cpuCount": 18,
+          "load1": 4.44921875,
+          "load5": 4.1552734375,
+          "load15": 3.8076171875
+        }
+      },
+      "requestedTier": "routine",
+      "selected": {
+        "id": "codex-luna-routine",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [],
+      "capacityCapturedAt": 1790159295608
+    },
+    "time": 1790159463865
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd21086002wSjIWVBnecBI2c",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a583001sHJNik0CmzkEFZ",
+      "attemptID": "attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd1-abfa-7b50-bcf0-a8eb55d52c35",
+        "exitCode": 0,
+        "latencyMs": 26079,
+        "inputTokens": 127274,
+        "cachedInputTokens": 112128,
+        "outputTokens": 875,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159491206
+    },
+    {
+      "id": "eval_0cdd21087001yFncTJIKXC41ui",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a583001sHJNik0CmzkEFZ",
+      "attemptID": "attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+      "kind": "check:extension",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { getFileExtension } from \"./packages/core/src/util/path.ts\"; if (getFileExtension(\"dir.name/file\") !== \"\" || getFileExtension(\".gitignore\") !== \"\" || getFileExtension(\"archive.tar.gz\") !== \"gz\") process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159491207
+    },
+    {
+      "id": "eval_0cdd2108800157dLi2Gah1JYl4",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a583001sHJNik0CmzkEFZ",
+      "attemptID": "attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd1a5b8001KLugrTOU1XBQL8",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 1
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/core/src/util/path.ts b/packages/core/src/util/path.ts\nindex b87316358..c2560ce2c 100644\n--- a/packages/core/src/util/path.ts\n+++ b/packages/core/src/util/path.ts\n@@ -14,8 +14,10 @@ export function getDirectory(path: string | undefined) {\n \n export function getFileExtension(path: string | undefined) {\n   if (!path) return \"\"\n-  const parts = path.split(\".\")\n-  return parts[parts.length - 1]\n+  const filename = getFilename(path)\n+  const lastDot = filename.lastIndexOf(\".\")\n+  if (lastDot <= 0) return \"\"\n+  return filename.slice(lastDot + 1)\n }\n \n export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {\n\ndiff --git a/packages/core/test/util/path.test.ts b/packages/core/test/util/path.test.ts\nnew file mode 100644\nindex 000000000..81f89a306\n--- /dev/null\n+++ b/packages/core/test/util/path.test.ts\n@@ -0,0 +1,16 @@\n+import { describe, expect, test } from \"bun:test\"\n+import { getFileExtension } from \"@opencode-ai/core/util/path\"\n+\n+describe(\"util.path\", () => {\n+  test(\"gets the extension from the basename\", () => {\n+    expect(getFileExtension(\"/parent.with.dots/archive.tar.gz\")).toBe(\"gz\")\n+    expect(getFileExtension(\"archive.tar.gz\")).toBe(\"gz\")\n+  })\n+\n+  test(\"returns an empty extension for extensionless files and dotfiles\", () => {\n+    expect(getFileExtension(\"/parent.with.dots/archive\")).toBe(\"\")\n+    expect(getFileExtension(\".gitignore\")).toBe(\"\")\n+    expect(getFileExtension(\"/parent.with.dots/.env\")).toBe(\"\")\n+    expect(getFileExtension(undefined)).toBe(\"\")\n+  })\n+})\n",
+        "truncated": false
+      },
+      "time": 1790159491208
+    }
+  ]
+}

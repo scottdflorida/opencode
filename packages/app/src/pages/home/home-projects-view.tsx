@@ -57,6 +57,7 @@ export type HomeProjectsViewProps = {
   onClearNotifications: (server: ServerConnection.Any, project: LocalProject) => void
   onCloseProject: (server: ServerConnection.Any, directory: string) => void
   onOpenSettings: () => void
+  onOpenLab: () => void
   onOpenHelp: () => void
 }
 
@@ -147,6 +148,7 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
       <HomeUtilityNav
         class="mb-8 mt-4 hidden shrink-0 lg:flex"
         onOpenSettings={props.onOpenSettings}
+        onOpenLab={props.onOpenLab}
         onOpenHelp={props.onOpenHelp}
         language={props.language}
       />
@@ -157,11 +159,16 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
 export function HomeUtilityNav(props: {
   class?: string
   onOpenSettings: () => void
+  onOpenLab: () => void
   onOpenHelp: () => void
   language: ReturnType<typeof useLanguage>
 }) {
   return (
     <div class={`${props.class ?? ""} min-w-0 flex-col gap-1 pr-3`}>
+      <HomeProjectNavButton type="button" class="text-v2-text-text-faint" onClick={props.onOpenLab}>
+        <IconV2 name="beaker" size="small" />
+        <span class={HOME_PROJECT_NAV_LABEL}>Lab</span>
+      </HomeProjectNavButton>
       <HomeProjectNavButton
         type="button"
         class="text-v2-text-text-faint [&>[data-slot=icon-svg]]:text-v2-icon-icon-muted"

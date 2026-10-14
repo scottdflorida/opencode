@@ -23,6 +23,9 @@ export type Event =
   | EventSessionNextPromptAdmitted
   | EventSessionNextContextUpdated
   | EventSessionNextSynthetic
+  | EventSessionNextControllerText
+  | EventSessionNextControllerPart
+  | EventSessionNextControllerPartUpdated
   | EventSessionNextShellStarted
   | EventSessionNextShellEnded
   | EventSessionNextStepStarted
@@ -48,6 +51,40 @@ export type Event =
   | EventSessionNextRevertStaged
   | EventSessionNextRevertCleared
   | EventSessionNextRevertCommitted
+  | EventOrchestrationRunCreated
+  | EventOrchestrationRunStatusChanged
+  | EventOrchestrationRunSourceSet
+  | EventOrchestrationRunWorkspaceSet
+  | EventOrchestrationRunSessionLinked
+  | EventOrchestrationTaskAdded
+  | EventOrchestrationPlanProposed
+  | EventOrchestrationPlanApplied
+  | EventOrchestrationDeliveryReviewed
+  | EventOrchestrationDeliverySummarized
+  | EventOrchestrationIntegrationStarted
+  | EventOrchestrationIntegrationStepRecorded
+  | EventOrchestrationIntegrationFinished
+  | EventOrchestrationIntegrationResumed
+  | EventOrchestrationFollowUpStarted
+  | EventOrchestrationFollowUpQueued
+  | EventOrchestrationFollowUpDequeued
+  | EventOrchestrationFollowUpSteered
+  | EventOrchestrationTaskStatusChanged
+  | EventOrchestrationDependencyAdded
+  | EventOrchestrationAttemptCreated
+  | EventOrchestrationAttemptPrepared
+  | EventOrchestrationAttemptVerdictRecorded
+  | EventOrchestrationAttemptFeedbackRecorded
+  | EventOrchestrationHumanRequested
+  | EventOrchestrationHumanRequestAnswered
+  | EventOrchestrationReassignmentRecorded
+  | EventOrchestrationAttemptStatusChanged
+  | EventOrchestrationRouteDecided
+  | EventOrchestrationEvaluationRecorded
+  | EventOrchestrationJudgmentRecorded
+  | EventOrchestrationTierRecommended
+  | EventOrchestrationReviewRecorded
+  | EventOrchestrationTriageLabeled
   | EventMessagePartDelta
   | EventSessionDiff
   | EventSessionError
@@ -892,6 +929,46 @@ export type GlobalEvent = {
       }
     | {
         id: string
+        type: "session.next.controller.text"
+        properties: {
+          timestamp: number
+          sessionID: string
+          messageID: string
+          text: string
+          kind: "summary" | "milestone" | "transcript"
+        }
+      }
+    | {
+        id: string
+        type: "session.next.controller.part"
+        properties: {
+          timestamp: number
+          sessionID: string
+          messageID: string
+          kind: "clarification" | "plan" | "task" | "replan" | "human_request" | "delivery_review" | "integration"
+          title: string
+          summary: string
+          detail: {
+            [key: string]: unknown
+          }
+        }
+      }
+    | {
+        id: string
+        type: "session.next.controller.part.updated"
+        properties: {
+          timestamp: number
+          sessionID: string
+          messageID: string
+          title: string
+          summary: string
+          detail: {
+            [key: string]: unknown
+          }
+        }
+      }
+    | {
+        id: string
         type: "session.next.shell.started"
         properties: {
           timestamp: number
@@ -1188,6 +1265,425 @@ export type GlobalEvent = {
           timestamp: number
           sessionID: string
           messageID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.run.created"
+        properties: {
+          runID: string
+          timestamp: number
+          projectID: string
+          objective: string
+          context?: string
+          policy?: OrchestrationPolicySnapshot
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.run.status.changed"
+        properties: {
+          runID: string
+          timestamp: number
+          status:
+            | "draft"
+            | "clarifying"
+            | "active"
+            | "reviewing_delivery"
+            | "delivered"
+            | "suspended"
+            | "completed"
+            | "failed"
+            | "cancelled"
+          retryAt?: number
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.run.source.set"
+        properties: {
+          runID: string
+          timestamp: number
+          source: LocationRef
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.run.workspace.set"
+        properties: {
+          runID: string
+          timestamp: number
+          workspace: OrchestrationRunWorkspace
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.run.session.linked"
+        properties: {
+          runID: string
+          timestamp: number
+          sessionID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.task.added"
+        properties: {
+          runID: string
+          timestamp: number
+          taskID: string
+          kind?: "agent" | "human"
+          title: string
+          description?: string
+          routeProfile?: string
+          capabilityTier?: string
+          checks?: Array<OrchestrationCheck>
+          acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.plan.proposed"
+        properties: {
+          runID: string
+          timestamp: number
+          planID: string
+          output: OrchestrationPlanOutput
+          generation?: OrchestrationPlanGeneration
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.plan.applied"
+        properties: {
+          runID: string
+          timestamp: number
+          planID: string
+          cancelTaskIDs?: Array<string>
+          tasks: Array<{
+            key: string
+            taskID: string
+          }>
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.delivery.reviewed"
+        properties: {
+          runID: string
+          timestamp: number
+          deliveryID: string
+          planID?: string
+          baseHead: string
+          head: string
+          changedFiles: number
+          review: OrchestrationDeliveryReview
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.delivery.summarized"
+        properties: {
+          runID: string
+          timestamp: number
+          deliveryID: string
+          summary: string
+          commitMessage: string
+          summaryGeneration?: OrchestrationPlanGeneration
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.integration.started"
+        properties: {
+          runID: string
+          timestamp: number
+          integrationID: string
+          deliveryID: string
+          options: OrchestrationIntegrationOptions
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.integration.step.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          integrationID: string
+          step: OrchestrationIntegrationStep
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.integration.finished"
+        properties: {
+          runID: string
+          timestamp: number
+          integrationID: string
+          status: "completed" | "failed"
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.integration.resumed"
+        properties: {
+          runID: string
+          timestamp: number
+          integrationID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.follow-up.started"
+        properties: {
+          runID: string
+          timestamp: number
+          turnID: string
+          objective: string
+          context?: string
+          baseHead: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.follow-up.queued"
+        properties: {
+          runID: string
+          timestamp: number
+          turnID: string
+          objective: string
+          context?: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.follow-up.dequeued"
+        properties: {
+          runID: string
+          timestamp: number
+          turnID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.follow-up.steered"
+        properties: {
+          runID: string
+          timestamp: number
+          turnID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.task.status.changed"
+        properties: {
+          runID: string
+          timestamp: number
+          taskID: string
+          status:
+            | "draft"
+            | "ready"
+            | "blocked"
+            | "running"
+            | "evaluating"
+            | "awaiting_review"
+            | "waiting_on_human"
+            | "succeeded"
+            | "failed"
+            | "cancelled"
+            | "suspended"
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.dependency.added"
+        properties: {
+          runID: string
+          timestamp: number
+          taskID: string
+          dependsOnTaskID: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.attempt.created"
+        properties: {
+          runID: string
+          timestamp: number
+          attemptID: string
+          taskID: string
+          kind?: "initial" | "revision" | "reassignment" | "rebase"
+          candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+          sessionID?: string
+          location?: LocationRef
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.attempt.prepared"
+        properties: {
+          runID: string
+          timestamp: number
+          attemptID: string
+          taskID: string
+          sessionID?: string
+          location: LocationRef
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.attempt.verdict.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          taskID: string
+          attemptID: string
+          verdict: OrchestrationAttemptVerdict
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.attempt.feedback.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          taskID: string
+          attemptID: string
+          feedback: OrchestrationAttemptFeedback
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.human.requested"
+        properties: {
+          runID: string
+          timestamp: number
+          requestID: string
+          taskID?: string
+          kind: "clarification" | "human_step" | "plan_approval" | "budget_exhausted" | "recovery"
+          prompt: string
+          choices: Array<string>
+          assumption?: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.human.request.answered"
+        properties: {
+          runID: string
+          timestamp: number
+          requestID: string
+          answer: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.reassignment.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          reassignmentID: string
+          taskID: string
+          afterAttemptID: string
+          options: Array<OrchestrationReassignmentOption>
+          selected: OrchestrationReassignmentOption
+          chooser: "rule" | "jev" | "llm"
+          request?: TypedJudgeChoiceRequest
+          result?: TypedJudgeChoiceResult
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.attempt.status.changed"
+        properties: {
+          runID: string
+          timestamp: number
+          attemptID: string
+          taskID: string
+          status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+          completed?: number
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.route.decided"
+        properties: {
+          runID: string
+          timestamp: number
+          decisionID: string
+          taskID: string
+          attemptID?: string
+          resolution: OrchestrationRouteResolution
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.evaluation.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          evaluationID: string
+          taskID: string
+          attemptID: string
+          kind: string
+          status: "passed" | "failed" | "indeterminate"
+          evidence: {
+            [key: string]: unknown
+          }
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.judgment.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          judgmentID: string
+          taskID: string
+          attemptID: string
+          mode: "shadow"
+          request: TypedJudgeChoiceRequest
+          result: TypedJudgeChoiceResult
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.tier.recommended"
+        properties: {
+          runID: string
+          timestamp: number
+          recommendationID: string
+          taskID: string
+          routeDecisionID: string
+          explicitTier?: string
+          request: TypedJudgeChoiceRequest
+          result: TypedJudgeChoiceResult
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.review.recorded"
+        properties: {
+          runID: string
+          timestamp: number
+          reviewID: string
+          taskID: string
+          attemptID: string
+          decision: "accepted" | "rejected"
+          note?: string
+        }
+      }
+    | {
+        id: string
+        type: "orchestration.triage.labeled"
+        properties: {
+          runID: string
+          timestamp: number
+          labelID: string
+          taskID: string
+          attemptID: string
+          decision: "looks_ready" | "needs_attention"
+          note?: string
         }
       }
     | {
@@ -1615,6 +2111,9 @@ export type GlobalEvent = {
     | SyncEventSessionNextPromptAdmitted
     | SyncEventSessionNextContextUpdated
     | SyncEventSessionNextSynthetic
+    | SyncEventSessionNextControllerText
+    | SyncEventSessionNextControllerPart
+    | SyncEventSessionNextControllerPartUpdated
     | SyncEventSessionNextShellStarted
     | SyncEventSessionNextShellEnded
     | SyncEventSessionNextStepStarted
@@ -1636,6 +2135,40 @@ export type GlobalEvent = {
     | SyncEventSessionNextRevertStaged
     | SyncEventSessionNextRevertCleared
     | SyncEventSessionNextRevertCommitted
+    | SyncEventOrchestrationRunCreated
+    | SyncEventOrchestrationRunStatusChanged
+    | SyncEventOrchestrationRunSourceSet
+    | SyncEventOrchestrationRunWorkspaceSet
+    | SyncEventOrchestrationRunSessionLinked
+    | SyncEventOrchestrationTaskAdded
+    | SyncEventOrchestrationPlanProposed
+    | SyncEventOrchestrationPlanApplied
+    | SyncEventOrchestrationDeliveryReviewed
+    | SyncEventOrchestrationDeliverySummarized
+    | SyncEventOrchestrationIntegrationStarted
+    | SyncEventOrchestrationIntegrationStepRecorded
+    | SyncEventOrchestrationIntegrationFinished
+    | SyncEventOrchestrationIntegrationResumed
+    | SyncEventOrchestrationFollowUpStarted
+    | SyncEventOrchestrationFollowUpQueued
+    | SyncEventOrchestrationFollowUpDequeued
+    | SyncEventOrchestrationFollowUpSteered
+    | SyncEventOrchestrationTaskStatusChanged
+    | SyncEventOrchestrationDependencyAdded
+    | SyncEventOrchestrationAttemptCreated
+    | SyncEventOrchestrationAttemptPrepared
+    | SyncEventOrchestrationAttemptVerdictRecorded
+    | SyncEventOrchestrationAttemptFeedbackRecorded
+    | SyncEventOrchestrationHumanRequested
+    | SyncEventOrchestrationHumanRequestAnswered
+    | SyncEventOrchestrationReassignmentRecorded
+    | SyncEventOrchestrationAttemptStatusChanged
+    | SyncEventOrchestrationRouteDecided
+    | SyncEventOrchestrationEvaluationRecorded
+    | SyncEventOrchestrationJudgmentRecorded
+    | SyncEventOrchestrationTierRecommended
+    | SyncEventOrchestrationReviewRecorded
+    | SyncEventOrchestrationTriageLabeled
 }
 
 /**
@@ -2010,6 +2543,7 @@ export type Config = {
   enterprise?: {
     url?: string
   }
+  orchestration?: ConfigV2Orchestration
   tool_output?: {
     max_lines?: number
     max_bytes?: number
@@ -2329,6 +2863,13 @@ export type VcsFileDiff = {
   additions: number
   deletions: number
   status?: "added" | "deleted" | "modified"
+}
+
+export type VcsDiffRangeError = {
+  name: "VcsDiffRangeError"
+  data: {
+    message: string
+  }
 }
 
 export type VcsApplyError = {
@@ -2747,6 +3288,9 @@ export type SessionDurableEvent =
   | SessionNextPromptAdmitted
   | SessionNextContextUpdated
   | SessionNextSynthetic
+  | SessionNextControllerText
+  | SessionNextControllerPart
+  | SessionNextControllerPartUpdated
   | SessionNextShellStarted
   | SessionNextShellEnded
   | SessionNextStepStarted
@@ -2874,6 +3418,9 @@ export type V2Event =
   | SessionNextPromptAdmitted
   | SessionNextContextUpdated
   | SessionNextSynthetic
+  | SessionNextControllerText
+  | SessionNextControllerPart
+  | SessionNextControllerPartUpdated
   | SessionNextShellStarted
   | SessionNextShellEnded
   | SessionNextStepStarted
@@ -2899,6 +3446,40 @@ export type V2Event =
   | SessionNextRevertStaged
   | SessionNextRevertCleared
   | SessionNextRevertCommitted
+  | OrchestrationRunCreated
+  | OrchestrationRunStatusChanged
+  | OrchestrationRunSourceSet
+  | OrchestrationRunWorkspaceSet
+  | OrchestrationRunSessionLinked
+  | OrchestrationTaskAdded
+  | OrchestrationPlanProposed
+  | OrchestrationPlanApplied
+  | OrchestrationDeliveryReviewed
+  | OrchestrationDeliverySummarized
+  | OrchestrationIntegrationStarted
+  | OrchestrationIntegrationStepRecorded
+  | OrchestrationIntegrationFinished
+  | OrchestrationIntegrationResumed
+  | OrchestrationFollowUpStarted
+  | OrchestrationFollowUpQueued
+  | OrchestrationFollowUpDequeued
+  | OrchestrationFollowUpSteered
+  | OrchestrationTaskStatusChanged
+  | OrchestrationDependencyAdded
+  | OrchestrationAttemptCreated
+  | OrchestrationAttemptPrepared
+  | OrchestrationAttemptVerdictRecorded
+  | OrchestrationAttemptFeedbackRecorded
+  | OrchestrationHumanRequested
+  | OrchestrationHumanRequestAnswered
+  | OrchestrationReassignmentRecorded
+  | OrchestrationAttemptStatusChanged
+  | OrchestrationRouteDecided
+  | OrchestrationEvaluationRecorded
+  | OrchestrationJudgmentRecorded
+  | OrchestrationTierRecommended
+  | OrchestrationReviewRecorded
+  | OrchestrationTriageLabeled
   | MessagePartDelta
   | SessionDiff
   | SessionError
@@ -2957,6 +3538,29 @@ export type ProjectCopyError = {
   data: {
     message: string
     forceRequired?: boolean
+  }
+}
+
+export type OrchestrationNotFoundError = {
+  name: "OrchestrationNotFoundError"
+  data: {
+    resource: string
+    id: string
+  }
+}
+
+export type OrchestrationOperationError = {
+  name: "OrchestrationOperationError"
+  data: {
+    operation: string
+    message: string
+  }
+}
+
+export type RouteProfileNotFoundError = {
+  name: "RouteProfileNotFoundError"
+  data: {
+    profile: string
   }
 }
 
@@ -3120,6 +3724,431 @@ export type RevertState = {
   snapshot?: string
   diff?: string
   files?: Array<FileDiff>
+}
+
+export type OrchestrationPolicyJudge = {
+  provider: "jev" | "llm" | "experiment"
+  routeProfile?: string
+  labelSampleRate?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  experiment?: {
+    arms: {
+      [key: string]: {
+        provider: "jev" | "llm"
+        routeProfile?: string
+      }
+    }
+    assignment: "split" | "paired"
+    authoritative: string
+    seed: number
+  }
+}
+
+export type OrchestrationPolicyRoles = {
+  planner: string
+  executor: string
+  judge: OrchestrationPolicyJudge
+  decider: OrchestrationPolicyJudge
+  feedback?: string
+  deliveryReviewer: string
+  summarizer: string
+}
+
+export type OrchestrationCheck = {
+  name: string
+  command: string
+  workingDirectory?: string
+  baseline?: boolean
+  timeoutSeconds?: number
+}
+
+export type OrchestrationCheckPreset = {
+  description?: string
+  checks: Array<OrchestrationCheck>
+}
+
+export type OrchestrationCapabilityTier = string
+
+export type OrchestrationDirectCandidate = {
+  id: string
+  type: "direct"
+  providerID: string
+  modelID: string
+  variant?: string
+}
+
+export type OrchestrationHarnessCandidate = {
+  id: string
+  type: "harness"
+  harnessID: string
+  modelID: string
+  effort?: string
+}
+
+export type OrchestrationCapacityRequirement = {
+  meter: string
+  remainingAtLeast: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+}
+
+export type OrchestrationRouteCandidate = {
+  candidate: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+  capabilityTier?: string
+  disabled: boolean
+  requirements: Array<OrchestrationCapacityRequirement>
+  hostFreeMemoryAtLeastBytes?: number
+}
+
+export type OrchestrationRouteProfile = {
+  name: string
+  unknownCapacity: "wait" | "allow"
+  exhausted: "wait_until_soonest_reset" | "fail"
+  maxCapacityAgeSeconds: number
+  quotaReserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<OrchestrationRouteCandidate>
+}
+
+export type OrchestrationPolicySnapshot = {
+  name: string
+  roles: OrchestrationPolicyRoles
+  tiers: {
+    [key: string]: string
+  }
+  checkPresets?: {
+    [key: string]: OrchestrationCheckPreset
+  }
+  escalationChain: Array<OrchestrationCapabilityTier>
+  budgets: {
+    maxRevisionsPerRoute: number
+    maxEscalations: number
+    maxRebasesPerTask?: number
+    maxReplans: number
+    maxAttempts?: number
+  }
+  acceptance: {
+    mode: "human" | "judge"
+    minConfidence: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    skipJudgeOnRegression: boolean
+  }
+  planApproval: "auto" | "human"
+  clarify: "ask" | "assume"
+  integrationDefault?: "apply" | "commit" | "merge" | "push" | "pull_request" | "discard"
+  routeProfiles: Array<OrchestrationRouteProfile>
+}
+
+export type OrchestrationRunWorkspace = {
+  sourceBranch?: string
+  sourceHead: string
+  runBranch: string
+  integration: LocationRef
+}
+
+export type OrchestrationAcceptanceCriterion = {
+  key: string
+  description: string
+}
+
+export type OrchestrationPlanTask = {
+  key: string
+  kind?: "agent" | "human"
+  title: string
+  description?: string
+  routeProfile?: string
+  capabilityTier?: string
+  checks: Array<OrchestrationCheck>
+  acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+  dependsOn: Array<string>
+}
+
+export type OrchestrationPlanOutput = {
+  rationale?: string
+  clauses?: Array<OrchestrationAcceptanceCriterion>
+  cancelTaskIDs?: Array<string>
+  tasks: Array<OrchestrationPlanTask>
+}
+
+export type OrchestrationCapacityProvider = {
+  id: string
+  state:
+    | "live"
+    | "partial"
+    | "no_data"
+    | "checking"
+    | "available"
+    | "not_installed"
+    | "unavailable"
+    | "failed_transient"
+    | "failed_permanent"
+    | "invalid_report"
+    | "unknown"
+  coverage?: string
+  observedAt?: number
+  retryAfterSeconds?: number
+  diagnosticCode?: string
+}
+
+export type OrchestrationCapacityMeter = {
+  id: string
+  state: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  timeRemaining?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  resetsAt?: number
+}
+
+export type OrchestrationCapacitySnapshot = {
+  schema: number
+  source: string
+  status: "live" | "partial" | "unavailable"
+  capturedAt: number
+  providers: Array<OrchestrationCapacityProvider>
+  meters: Array<OrchestrationCapacityMeter>
+  diagnostic?: string
+}
+
+export type OrchestrationHarnessObservation = {
+  id: string
+  state: "available" | "not_installed" | "unauthenticated" | "unsupported" | "unknown"
+  version?: string
+  models?: Array<string>
+  efforts?: Array<string>
+  modelEfforts?: {
+    [key: string]: Array<string>
+  }
+}
+
+export type OrchestrationHarnessSnapshot = {
+  schema: 1
+  source: "host"
+  capturedAt: number
+  harnesses: Array<OrchestrationHarnessObservation>
+}
+
+export type OrchestrationHostResourceSnapshot = {
+  schema: 1
+  source: "host"
+  capturedAt: number
+  platform: string
+  architecture: string
+  totalMemoryBytes: number
+  freeMemoryBytes: number
+  cpuCount: number
+  load1: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  load5: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  load15: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+}
+
+export type OrchestrationResourceObservation = {
+  schema: 1
+  capturedAt: number
+  quota: OrchestrationCapacitySnapshot
+  host: OrchestrationHostResourceSnapshot
+  harnesses?: OrchestrationHarnessSnapshot
+}
+
+export type OrchestrationRouteRejection = {
+  candidateID: string
+  code:
+    | "disabled"
+    | "privacy_disallowed"
+    | "tier_mismatch"
+    | "provider_unavailable"
+    | "capacity_unknown"
+    | "capacity_stale"
+    | "capacity_below_threshold"
+    | "harness_unavailable"
+    | "harness_unsupported"
+    | "host_memory_unknown"
+    | "host_memory_below_threshold"
+  message: string
+  meter?: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  required?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  availableBytes?: number
+  requiredBytes?: number
+  retryAt?: number
+}
+
+export type OrchestrationRouteResolution = {
+  status: "selected" | "waiting" | "failed"
+  profile: string
+  profileSnapshot?: OrchestrationRouteProfile
+  capacitySnapshot?: OrchestrationCapacitySnapshot
+  harnessSnapshot?: OrchestrationHarnessSnapshot
+  resourceObservation?: OrchestrationResourceObservation
+  requestedTier?: string
+  selected?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+  rejected: Array<OrchestrationRouteRejection>
+  capacityCapturedAt: number
+  retryAt?: number
+}
+
+export type OrchestrationPlanGeneration = {
+  route: OrchestrationRouteResolution
+  prompt: string
+  requestDigest: string
+  latencyMs: number
+  inputTokens?: number
+  outputTokens?: number
+}
+
+export type TypedJudgeChoiceQuestion = {
+  instructions:
+    | string
+    | {
+        [key: string]: unknown
+      }
+    | Array<unknown>
+  criteria: {
+    [key: string]:
+      | string
+      | {
+          [key: string]: unknown
+        }
+      | Array<unknown>
+  }
+}
+
+export type TypedJudgeChoiceRequest = {
+  purpose: string
+  state:
+    | string
+    | {
+        [key: string]: unknown
+      }
+    | Array<unknown>
+  question: TypedJudgeChoiceQuestion
+  fallback: string
+}
+
+export type TypedJudgeChoiceAnswer = {
+  choice: string
+  confidence: number
+  probabilities?: {
+    [key: string]: number
+  }
+}
+
+export type TypedJudgeUsage = {
+  inputTokens: number
+  outputTokens: number
+  estimatedCostUsd?: number
+}
+
+export type TypedJudgeChoiceResult = {
+  status: "valid" | "invalid" | "unavailable" | "timed_out"
+  provider: string
+  model: string
+  requestDigest: string
+  cached: boolean
+  latencyMs: number
+  answer?: TypedJudgeChoiceAnswer
+  usage?: TypedJudgeUsage
+  errorCode?: string
+}
+
+export type OrchestrationDeliveryReview = {
+  decision: "delivered" | "gaps" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  gateFailures: Array<string>
+  clauses: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationIntegrationOptions = {
+  action: "apply" | "commit" | "merge" | "push" | "pull_request" | "discard"
+  branch?: string
+  targetBranch?: string
+  remote?: string
+  remoteBranch?: string
+  baseBranch?: string
+  history?: "squash" | "per_task"
+  mergeStrategy?: "ff" | "merge" | "squash"
+  commitMessage?: string
+  draft?: boolean
+  reviewers?: Array<string>
+  confirmDefaultPush?: boolean
+  confirmDiscard?: boolean
+  expectedHead: string
+  expectedTargetHead?: string
+}
+
+export type OrchestrationIntegrationStep = {
+  name: "apply" | "commit" | "checks" | "merge" | "push" | "pull_request" | "discard"
+  status: "succeeded" | "failed"
+  commit?: string
+  branch?: string
+  remote?: string
+  remoteBranch?: string
+  pullRequestURL?: string
+  message?: string
+  time: number
+}
+
+export type OrchestrationAttemptVerdictBase = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationAttemptVerdict = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+  experiment?: {
+    assignment: "split" | "paired"
+    authoritativeArm: string
+    seed: number
+    arms: Array<{
+      arm: string
+      verdict: OrchestrationAttemptVerdictBase
+    }>
+  }
+}
+
+export type OrchestrationAttemptFeedback = {
+  source: "deterministic" | "llm" | "human"
+  text: string
+  criterionKeys: Array<string>
+  failedChecks: Array<string>
+}
+
+export type OrchestrationReassignmentOption = {
+  action: "revise" | "reassign" | "escalate" | "rebase" | "human"
+  tier?: string
+  candidateID?: string
 }
 
 export type PermissionV2Source = {
@@ -3418,6 +4447,67 @@ export type SyncEventSessionNextSynthetic = {
       sessionID: string
       messageID: string
       text: string
+    }
+  }
+}
+
+export type SyncEventSessionNextControllerText = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "session.next.controller.text.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      timestamp: number
+      sessionID: string
+      messageID: string
+      text: string
+      kind: "summary" | "milestone" | "transcript"
+    }
+  }
+}
+
+export type SyncEventSessionNextControllerPart = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "session.next.controller.part.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      timestamp: number
+      sessionID: string
+      messageID: string
+      kind: "clarification" | "plan" | "task" | "replan" | "human_request" | "delivery_review" | "integration"
+      title: string
+      summary: string
+      detail: {
+        [key: string]: unknown
+      }
+    }
+  }
+}
+
+export type SyncEventSessionNextControllerPartUpdated = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "session.next.controller.part.updated.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      timestamp: number
+      sessionID: string
+      messageID: string
+      title: string
+      summary: string
+      detail: {
+        [key: string]: unknown
+      }
     }
   }
 }
@@ -3826,6 +4916,663 @@ export type SyncEventSessionNextRevertCommitted = {
   }
 }
 
+export type SyncEventOrchestrationRunCreated = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.run.created.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      projectID: string
+      objective: string
+      context?: string
+      policy?: OrchestrationPolicySnapshot
+    }
+  }
+}
+
+export type SyncEventOrchestrationRunStatusChanged = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.run.status.changed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      status:
+        | "draft"
+        | "clarifying"
+        | "active"
+        | "reviewing_delivery"
+        | "delivered"
+        | "suspended"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      retryAt?: number
+    }
+  }
+}
+
+export type SyncEventOrchestrationRunSourceSet = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.run.source.set.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      source: LocationRef
+    }
+  }
+}
+
+export type SyncEventOrchestrationRunWorkspaceSet = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.run.workspace.set.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      workspace: OrchestrationRunWorkspace
+    }
+  }
+}
+
+export type SyncEventOrchestrationRunSessionLinked = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.run.session.linked.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      sessionID: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationTaskAdded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.task.added.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      taskID: string
+      kind?: "agent" | "human"
+      title: string
+      description?: string
+      routeProfile?: string
+      capabilityTier?: string
+      checks?: Array<OrchestrationCheck>
+      acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+    }
+  }
+}
+
+export type SyncEventOrchestrationPlanProposed = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.plan.proposed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      planID: string
+      output: OrchestrationPlanOutput
+      generation?: OrchestrationPlanGeneration
+    }
+  }
+}
+
+export type SyncEventOrchestrationPlanApplied = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.plan.applied.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      planID: string
+      cancelTaskIDs?: Array<string>
+      tasks: Array<{
+        key: string
+        taskID: string
+      }>
+    }
+  }
+}
+
+export type SyncEventOrchestrationDeliveryReviewed = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.delivery.reviewed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      deliveryID: string
+      planID?: string
+      baseHead: string
+      head: string
+      changedFiles: number
+      review: OrchestrationDeliveryReview
+    }
+  }
+}
+
+export type SyncEventOrchestrationDeliverySummarized = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.delivery.summarized.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      deliveryID: string
+      summary: string
+      commitMessage: string
+      summaryGeneration?: OrchestrationPlanGeneration
+    }
+  }
+}
+
+export type SyncEventOrchestrationIntegrationStarted = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.integration.started.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      integrationID: string
+      deliveryID: string
+      options: OrchestrationIntegrationOptions
+    }
+  }
+}
+
+export type SyncEventOrchestrationIntegrationStepRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.integration.step.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      integrationID: string
+      step: OrchestrationIntegrationStep
+    }
+  }
+}
+
+export type SyncEventOrchestrationIntegrationFinished = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.integration.finished.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      integrationID: string
+      status: "completed" | "failed"
+    }
+  }
+}
+
+export type SyncEventOrchestrationIntegrationResumed = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.integration.resumed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      integrationID: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationFollowUpStarted = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.follow-up.started.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      turnID: string
+      objective: string
+      context?: string
+      baseHead: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationFollowUpQueued = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.follow-up.queued.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      turnID: string
+      objective: string
+      context?: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationFollowUpDequeued = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.follow-up.dequeued.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      turnID: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationFollowUpSteered = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.follow-up.steered.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      turnID: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationTaskStatusChanged = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.task.status.changed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      taskID: string
+      status:
+        | "draft"
+        | "ready"
+        | "blocked"
+        | "running"
+        | "evaluating"
+        | "awaiting_review"
+        | "waiting_on_human"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "suspended"
+    }
+  }
+}
+
+export type SyncEventOrchestrationDependencyAdded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.dependency.added.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      taskID: string
+      dependsOnTaskID: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationAttemptCreated = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.attempt.created.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      attemptID: string
+      taskID: string
+      kind?: "initial" | "revision" | "reassignment" | "rebase"
+      candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+      sessionID?: string
+      location?: LocationRef
+    }
+  }
+}
+
+export type SyncEventOrchestrationAttemptPrepared = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.attempt.prepared.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      attemptID: string
+      taskID: string
+      sessionID?: string
+      location: LocationRef
+    }
+  }
+}
+
+export type SyncEventOrchestrationAttemptVerdictRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.attempt.verdict.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      taskID: string
+      attemptID: string
+      verdict: OrchestrationAttemptVerdict
+    }
+  }
+}
+
+export type SyncEventOrchestrationAttemptFeedbackRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.attempt.feedback.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      taskID: string
+      attemptID: string
+      feedback: OrchestrationAttemptFeedback
+    }
+  }
+}
+
+export type SyncEventOrchestrationHumanRequested = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.human.requested.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      requestID: string
+      taskID?: string
+      kind: "clarification" | "human_step" | "plan_approval" | "budget_exhausted" | "recovery"
+      prompt: string
+      choices: Array<string>
+      assumption?: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationHumanRequestAnswered = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.human.request.answered.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      requestID: string
+      answer: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationReassignmentRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.reassignment.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      reassignmentID: string
+      taskID: string
+      afterAttemptID: string
+      options: Array<OrchestrationReassignmentOption>
+      selected: OrchestrationReassignmentOption
+      chooser: "rule" | "jev" | "llm"
+      request?: TypedJudgeChoiceRequest
+      result?: TypedJudgeChoiceResult
+    }
+  }
+}
+
+export type SyncEventOrchestrationAttemptStatusChanged = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.attempt.status.changed.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      attemptID: string
+      taskID: string
+      status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+      completed?: number
+    }
+  }
+}
+
+export type SyncEventOrchestrationRouteDecided = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.route.decided.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      decisionID: string
+      taskID: string
+      attemptID?: string
+      resolution: OrchestrationRouteResolution
+    }
+  }
+}
+
+export type SyncEventOrchestrationEvaluationRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.evaluation.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      evaluationID: string
+      taskID: string
+      attemptID: string
+      kind: string
+      status: "passed" | "failed" | "indeterminate"
+      evidence: {
+        [key: string]: unknown
+      }
+    }
+  }
+}
+
+export type SyncEventOrchestrationJudgmentRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.judgment.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      judgmentID: string
+      taskID: string
+      attemptID: string
+      mode: "shadow"
+      request: TypedJudgeChoiceRequest
+      result: TypedJudgeChoiceResult
+    }
+  }
+}
+
+export type SyncEventOrchestrationTierRecommended = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.tier.recommended.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      recommendationID: string
+      taskID: string
+      routeDecisionID: string
+      explicitTier?: string
+      request: TypedJudgeChoiceRequest
+      result: TypedJudgeChoiceResult
+    }
+  }
+}
+
+export type SyncEventOrchestrationReviewRecorded = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.review.recorded.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      reviewID: string
+      taskID: string
+      attemptID: string
+      decision: "accepted" | "rejected"
+      note?: string
+    }
+  }
+}
+
+export type SyncEventOrchestrationTriageLabeled = {
+  type: "sync"
+  id: string
+  syncEvent: {
+    type: "orchestration.triage.labeled.1"
+    id: string
+    seq: number
+    aggregateID: string
+    data: {
+      runID: string
+      timestamp: number
+      labelID: string
+      taskID: string
+      attemptID: string
+      decision: "looks_ready" | "needs_attention"
+      note?: string
+    }
+  }
+}
+
 export type ConfigV2ReferenceGit = {
   repository: string
   branch?: string
@@ -3837,6 +5584,141 @@ export type ConfigV2ReferenceLocal = {
   path: string
   description?: string
   hidden?: boolean
+}
+
+export type ConfigV2OrchestrationCapacityRequirement = {
+  meter: string
+  remaining_at_least: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+}
+
+export type ConfigV2OrchestrationDirectCandidate = {
+  id: string
+  type: "direct"
+  provider: string
+  model: string
+  capability_tier?: OrchestrationCapabilityTier
+  variant?: string
+  disabled?: boolean
+  requires?: Array<ConfigV2OrchestrationCapacityRequirement>
+  host_free_memory_at_least_bytes?: number
+}
+
+export type ConfigV2OrchestrationHarnessCandidate = {
+  id: string
+  type: "harness"
+  harness: string
+  model: string
+  capability_tier?: OrchestrationCapabilityTier
+  effort?: string
+  disabled?: boolean
+  requires?: Array<ConfigV2OrchestrationCapacityRequirement>
+  host_free_memory_at_least_bytes?: number
+}
+
+export type ConfigV2OrchestrationRouteProfile = {
+  unknown_capacity?: "wait" | "allow"
+  exhausted?: "wait_until_soonest_reset" | "fail"
+  max_capacity_age_seconds?: number
+  quota_reserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<ConfigV2OrchestrationDirectCandidate | ConfigV2OrchestrationHarnessCandidate>
+}
+
+export type ConfigV2OrchestrationPolicyJudge = {
+  provider: "jev" | "llm" | "experiment"
+  route_profile?: string
+  label_sample_rate?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  experiment?: {
+    arms: {
+      [key: string]: {
+        provider: "jev" | "llm"
+        route_profile?: string
+      }
+    }
+    assignment: "split" | "paired"
+    authoritative: string
+    seed: number
+  }
+}
+
+export type ConfigV2OrchestrationPolicyRoles = {
+  planner?: string
+  executor?: string
+  judge?: ConfigV2OrchestrationPolicyJudge
+  decider?: ConfigV2OrchestrationPolicyJudge
+  feedback?: string
+  delivery_reviewer?: string
+  summarizer?: string
+}
+
+export type ConfigV2OrchestrationPolicyBudgets = {
+  max_revisions_per_route?: number
+  max_escalations?: number
+  max_rebases_per_task?: number
+  max_replans?: number
+  max_attempts?: number
+}
+
+export type ConfigV2OrchestrationPolicyAcceptance = {
+  mode?: "human" | "judge"
+  min_confidence?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  skip_judge_on_regression?: boolean
+}
+
+export type ConfigV2OrchestrationPolicy = {
+  extends?: string
+  roles?: ConfigV2OrchestrationPolicyRoles
+  tiers?: {
+    [key: string]: string
+  }
+  escalation_chain?: Array<OrchestrationCapabilityTier>
+  budgets?: ConfigV2OrchestrationPolicyBudgets
+  acceptance?: ConfigV2OrchestrationPolicyAcceptance
+  plan_approval?: "auto" | "human"
+  clarify?: "ask" | "assume"
+  integration_default?: "apply" | "commit" | "merge" | "push" | "pull_request" | "discard"
+}
+
+export type ConfigV2OrchestrationJudge = {
+  mode: "off" | "shadow"
+  provider?: "jev"
+  model?: string
+  base_url?: string
+  timeout_ms?: number
+  cache_ttl_seconds?: number
+  input_cost_per_million_usd?: number
+  output_cost_per_million_usd?: number
+}
+
+export type ConfigV2OrchestrationTierClassifier = {
+  mode: "off" | "shadow"
+  tiers: {
+    [key: string]: string
+  }
+  fallback: OrchestrationCapabilityTier
+}
+
+export type ConfigV2Orchestration = {
+  default_route_profile?: string
+  default_policy?: string
+  max_concurrency?: number
+  route_profiles?: {
+    [key: string]: ConfigV2OrchestrationRouteProfile
+  }
+  check_presets?: {
+    [key: string]: OrchestrationCheckPreset
+  }
+  policies?: {
+    [key: string]: ConfigV2OrchestrationPolicy
+  }
+  judge?: ConfigV2OrchestrationJudge
+  tier_classifier?: ConfigV2OrchestrationTierClassifier
 }
 
 export type PolicyEffect = "allow" | "deny"
@@ -3907,6 +5789,7 @@ export type AgentV2Info = {
 
 export type SessionV2Info = {
   id: string
+  kind?: "orchestration" | "attempt_mirror"
   parentID?: string
   projectID: string
   agent?: string
@@ -4304,6 +6187,76 @@ export type SessionNextSynthetic = {
     sessionID: string
     messageID: string
     text: string
+  }
+}
+
+export type SessionNextControllerText = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "session.next.controller.text"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    text: string
+    kind: "summary" | "milestone" | "transcript"
+  }
+}
+
+export type SessionNextControllerPart = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "session.next.controller.part"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    kind: "clarification" | "plan" | "task" | "replan" | "human_request" | "delivery_review" | "integration"
+    title: string
+    summary: string
+    detail: {
+      [key: string]: unknown
+    }
+  }
+}
+
+export type SessionNextControllerPartUpdated = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "session.next.controller.part.updated"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    title: string
+    summary: string
+    detail: {
+      [key: string]: unknown
+    }
   }
 }
 
@@ -5303,6 +7256,949 @@ export type SessionNextCompactionDelta = {
   }
 }
 
+export type OrchestrationPolicyJudge1 = {
+  provider: "jev" | "llm" | "experiment"
+  routeProfile?: string
+  labelSampleRate?: number | "NaN" | "Infinity" | "-Infinity"
+  experiment?: {
+    arms: {
+      [key: string]: {
+        provider: "jev" | "llm"
+        routeProfile?: string
+      }
+    }
+    assignment: "split" | "paired"
+    authoritative: string
+    seed: number
+  }
+}
+
+export type OrchestrationCapacityRequirement1 = {
+  meter: string
+  remainingAtLeast: number | "NaN" | "Infinity" | "-Infinity"
+}
+
+export type OrchestrationRouteProfile2 = {
+  name: string
+  unknownCapacity: "wait" | "allow"
+  exhausted: "wait_until_soonest_reset" | "fail"
+  maxCapacityAgeSeconds: number
+  quotaReserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<OrchestrationRouteCandidate>
+}
+
+export type OrchestrationPolicySnapshot1 = {
+  name: string
+  roles: OrchestrationPolicyRoles
+  tiers: {
+    [key: string]: string
+  }
+  checkPresets?: {
+    [key: string]: OrchestrationCheckPreset
+  }
+  escalationChain: Array<string>
+  budgets: {
+    maxRevisionsPerRoute: number
+    maxEscalations: number
+    maxRebasesPerTask?: number
+    maxReplans: number
+    maxAttempts?: number
+  }
+  acceptance: {
+    mode: "human" | "judge"
+    minConfidence: number | "NaN" | "Infinity" | "-Infinity"
+    skipJudgeOnRegression: boolean
+  }
+  planApproval: "auto" | "human"
+  clarify: "ask" | "assume"
+  integrationDefault?: "apply" | "commit" | "merge" | "push" | "pull_request" | "discard"
+  routeProfiles: Array<OrchestrationRouteProfile2>
+}
+
+export type OrchestrationRunCreated = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.run.created"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    projectID: string
+    objective: string
+    context?: string
+    policy?: OrchestrationPolicySnapshot1
+  }
+}
+
+export type OrchestrationRunStatusChanged = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.run.status.changed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    status:
+      | "draft"
+      | "clarifying"
+      | "active"
+      | "reviewing_delivery"
+      | "delivered"
+      | "suspended"
+      | "completed"
+      | "failed"
+      | "cancelled"
+    retryAt?: number
+  }
+}
+
+export type OrchestrationRunSourceSet = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.run.source.set"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    source: LocationRef
+  }
+}
+
+export type OrchestrationRunWorkspaceSet = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.run.workspace.set"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    workspace: OrchestrationRunWorkspace
+  }
+}
+
+export type OrchestrationRunSessionLinked = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.run.session.linked"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    sessionID: string
+  }
+}
+
+export type OrchestrationTaskAdded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.task.added"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    taskID: string
+    kind?: "agent" | "human"
+    title: string
+    description?: string
+    routeProfile?: string
+    capabilityTier?: string
+    checks?: Array<OrchestrationCheck>
+    acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+  }
+}
+
+export type OrchestrationRouteProfile3 = {
+  name: string
+  unknownCapacity: "wait" | "allow"
+  exhausted: "wait_until_soonest_reset" | "fail"
+  maxCapacityAgeSeconds: number
+  quotaReserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<OrchestrationRouteCandidate>
+}
+
+export type OrchestrationCapacityMeter1 = {
+  id: string
+  state: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity"
+  timeRemaining?: number | "NaN" | "Infinity" | "-Infinity"
+  resetsAt?: number
+}
+
+export type OrchestrationHostResourceSnapshot1 = {
+  schema: 1
+  source: "host"
+  capturedAt: number
+  platform: string
+  architecture: string
+  totalMemoryBytes: number
+  freeMemoryBytes: number
+  cpuCount: number
+  load1: number | "NaN" | "Infinity" | "-Infinity"
+  load5: number | "NaN" | "Infinity" | "-Infinity"
+  load15: number | "NaN" | "Infinity" | "-Infinity"
+}
+
+export type OrchestrationRouteRejection1 = {
+  candidateID: string
+  code:
+    | "disabled"
+    | "privacy_disallowed"
+    | "tier_mismatch"
+    | "provider_unavailable"
+    | "capacity_unknown"
+    | "capacity_stale"
+    | "capacity_below_threshold"
+    | "harness_unavailable"
+    | "harness_unsupported"
+    | "host_memory_unknown"
+    | "host_memory_below_threshold"
+  message: string
+  meter?: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity"
+  required?: number | "NaN" | "Infinity" | "-Infinity"
+  availableBytes?: number
+  requiredBytes?: number
+  retryAt?: number
+}
+
+export type OrchestrationPlanProposed = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.plan.proposed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    planID: string
+    output: OrchestrationPlanOutput
+    generation?: OrchestrationPlanGeneration
+  }
+}
+
+export type OrchestrationPlanApplied = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.plan.applied"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    planID: string
+    cancelTaskIDs?: Array<string>
+    tasks: Array<{
+      key: string
+      taskID: string
+    }>
+  }
+}
+
+export type OrchestrationDeliveryReview1 = {
+  decision: "delivered" | "gaps" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  clauses: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationDeliveryReviewed = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.delivery.reviewed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    deliveryID: string
+    planID?: string
+    baseHead: string
+    head: string
+    changedFiles: number
+    review: OrchestrationDeliveryReview1
+  }
+}
+
+export type OrchestrationDeliverySummarized = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.delivery.summarized"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    deliveryID: string
+    summary: string
+    commitMessage: string
+    summaryGeneration?: OrchestrationPlanGeneration
+  }
+}
+
+export type OrchestrationIntegrationStarted = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.integration.started"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    deliveryID: string
+    options: OrchestrationIntegrationOptions
+  }
+}
+
+export type OrchestrationIntegrationStepRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.integration.step.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    step: OrchestrationIntegrationStep
+  }
+}
+
+export type OrchestrationIntegrationFinished = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.integration.finished"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    status: "completed" | "failed"
+  }
+}
+
+export type OrchestrationIntegrationResumed = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.integration.resumed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    integrationID: string
+  }
+}
+
+export type OrchestrationFollowUpStarted = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.follow-up.started"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    turnID: string
+    objective: string
+    context?: string
+    baseHead: string
+  }
+}
+
+export type OrchestrationFollowUpQueued = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.follow-up.queued"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    turnID: string
+    objective: string
+    context?: string
+  }
+}
+
+export type OrchestrationFollowUpDequeued = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.follow-up.dequeued"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    turnID: string
+  }
+}
+
+export type OrchestrationFollowUpSteered = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.follow-up.steered"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    turnID: string
+  }
+}
+
+export type OrchestrationTaskStatusChanged = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.task.status.changed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    taskID: string
+    status:
+      | "draft"
+      | "ready"
+      | "blocked"
+      | "running"
+      | "evaluating"
+      | "awaiting_review"
+      | "waiting_on_human"
+      | "succeeded"
+      | "failed"
+      | "cancelled"
+      | "suspended"
+  }
+}
+
+export type OrchestrationDependencyAdded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.dependency.added"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    taskID: string
+    dependsOnTaskID: string
+  }
+}
+
+export type OrchestrationAttemptCreated = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.attempt.created"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    kind?: "initial" | "revision" | "reassignment" | "rebase"
+    candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+    sessionID?: string
+    location?: LocationRef
+  }
+}
+
+export type OrchestrationAttemptPrepared = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.attempt.prepared"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    sessionID?: string
+    location: LocationRef
+  }
+}
+
+export type OrchestrationAttemptVerdictBase1 = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationAttemptVerdict1 = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+  experiment?: {
+    assignment: "split" | "paired"
+    authoritativeArm: string
+    seed: number
+    arms: Array<{
+      arm: string
+      verdict: OrchestrationAttemptVerdictBase1
+    }>
+  }
+}
+
+export type OrchestrationAttemptVerdictRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.attempt.verdict.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    taskID: string
+    attemptID: string
+    verdict: OrchestrationAttemptVerdict1
+  }
+}
+
+export type OrchestrationAttemptFeedbackRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.attempt.feedback.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    taskID: string
+    attemptID: string
+    feedback: OrchestrationAttemptFeedback
+  }
+}
+
+export type OrchestrationHumanRequested = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.human.requested"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    requestID: string
+    taskID?: string
+    kind: "clarification" | "human_step" | "plan_approval" | "budget_exhausted" | "recovery"
+    prompt: string
+    choices: Array<string>
+    assumption?: string
+  }
+}
+
+export type OrchestrationHumanRequestAnswered = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.human.request.answered"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    requestID: string
+    answer: string
+  }
+}
+
+export type OrchestrationReassignmentRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.reassignment.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    reassignmentID: string
+    taskID: string
+    afterAttemptID: string
+    options: Array<OrchestrationReassignmentOption>
+    selected: OrchestrationReassignmentOption
+    chooser: "rule" | "jev" | "llm"
+    request?: TypedJudgeChoiceRequest
+    result?: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationAttemptStatusChanged = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.attempt.status.changed"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+    completed?: number
+  }
+}
+
+export type OrchestrationRouteDecided = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.route.decided"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    decisionID: string
+    taskID: string
+    attemptID?: string
+    resolution: OrchestrationRouteResolution
+  }
+}
+
+export type OrchestrationEvaluationRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.evaluation.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    evaluationID: string
+    taskID: string
+    attemptID: string
+    kind: string
+    status: "passed" | "failed" | "indeterminate"
+    evidence: {
+      [key: string]: unknown
+    }
+  }
+}
+
+export type OrchestrationJudgmentRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.judgment.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    judgmentID: string
+    taskID: string
+    attemptID: string
+    mode: "shadow"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationTierRecommended = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.tier.recommended"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    recommendationID: string
+    taskID: string
+    routeDecisionID: string
+    explicitTier?: string
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationReviewRecorded = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.review.recorded"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    reviewID: string
+    taskID: string
+    attemptID: string
+    decision: "accepted" | "rejected"
+    note?: string
+  }
+}
+
+export type OrchestrationTriageLabeled = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "orchestration.triage.labeled"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    runID: string
+    timestamp: number
+    labelID: string
+    taskID: string
+    attemptID: string
+    decision: "looks_ready" | "needs_attention"
+    note?: string
+  }
+}
+
 export type MessagePartDelta = {
   id: string
   metadata?: {
@@ -6154,6 +9050,452 @@ export type ProjectCopyCopy = {
   directory: string
 }
 
+export type OrchestrationTime = {
+  created: number
+  updated: number
+}
+
+export type OrchestrationRun = {
+  id: string
+  sessionID?: string
+  projectID: string
+  objective: string
+  context?: string
+  status:
+    | "draft"
+    | "clarifying"
+    | "active"
+    | "reviewing_delivery"
+    | "delivered"
+    | "suspended"
+    | "completed"
+    | "failed"
+    | "cancelled"
+  policy?: OrchestrationPolicySnapshot
+  workspace?: OrchestrationRunWorkspace
+  retryAt?: number
+  source?: LocationRef
+  time: OrchestrationTime
+}
+
+export type OrchestrationRunSummary = {
+  runID: string
+  status:
+    | "draft"
+    | "clarifying"
+    | "active"
+    | "reviewing_delivery"
+    | "delivered"
+    | "suspended"
+    | "completed"
+    | "failed"
+    | "cancelled"
+  acceptedTasks: number
+  totalTasks: number
+  attention?: string
+  pendingLabels: number
+  unintegrated: boolean
+}
+
+export type OrchestrationPlan = {
+  id: string
+  runID: string
+  output: OrchestrationPlanOutput
+  generation?: OrchestrationPlanGeneration
+  status: "proposed" | "applied"
+  time: {
+    created: number
+    applied?: number
+  }
+}
+
+export type OrchestrationDelivery = {
+  id: string
+  runID: string
+  planID?: string
+  baseHead: string
+  head: string
+  changedFiles: number
+  review: OrchestrationDeliveryReview
+  summary?: string
+  commitMessage?: string
+  summaryGeneration?: OrchestrationPlanGeneration
+  time: {
+    created: number
+    delivered?: number
+  }
+}
+
+export type OrchestrationIntegration = {
+  id: string
+  runID: string
+  deliveryID: string
+  options: OrchestrationIntegrationOptions
+  status: "running" | "completed" | "failed"
+  steps: Array<OrchestrationIntegrationStep>
+  time: OrchestrationTime
+}
+
+export type OrchestrationFollowUp = {
+  id: string
+  runID: string
+  objective: string
+  context?: string
+  baseHead: string
+  time: number
+}
+
+export type OrchestrationQueuedFollowUp = {
+  id: string
+  runID: string
+  objective: string
+  context?: string
+  status: "queued" | "steered" | "started"
+  time: number
+  timeSteered?: number
+}
+
+export type OrchestrationTask = {
+  id: string
+  runID: string
+  kind: "agent" | "human"
+  title: string
+  description?: string
+  routeProfile?: string
+  capabilityTier?: string
+  checks: Array<OrchestrationCheck>
+  acceptanceCriteria: Array<OrchestrationAcceptanceCriterion>
+  status:
+    | "draft"
+    | "ready"
+    | "blocked"
+    | "running"
+    | "evaluating"
+    | "awaiting_review"
+    | "waiting_on_human"
+    | "succeeded"
+    | "failed"
+    | "cancelled"
+    | "suspended"
+  time: OrchestrationTime
+}
+
+export type OrchestrationDependency = {
+  runID: string
+  taskID: string
+  dependsOnTaskID: string
+}
+
+export type OrchestrationAttempt = {
+  id: string
+  runID: string
+  taskID: string
+  kind: "initial" | "revision" | "reassignment" | "rebase"
+  status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+  candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+  sessionID?: string
+  location?: LocationRef
+  verdict?: OrchestrationAttemptVerdict
+  feedback?: OrchestrationAttemptFeedback
+  time: {
+    created: number
+    updated: number
+    completed?: number
+  }
+}
+
+export type OrchestrationRouteDecision = {
+  id: string
+  runID: string
+  taskID: string
+  attemptID?: string
+  resolution: OrchestrationRouteResolution
+  time: number
+}
+
+export type OrchestrationEvaluation = {
+  id: string
+  runID: string
+  taskID: string
+  attemptID: string
+  kind: string
+  status: "passed" | "failed" | "indeterminate"
+  evidence: {
+    [key: string]: unknown
+  }
+  time: number
+}
+
+export type OrchestrationJudgment = {
+  id: string
+  runID: string
+  taskID: string
+  attemptID: string
+  mode: "shadow"
+  request: TypedJudgeChoiceRequest
+  result: TypedJudgeChoiceResult
+  time: number
+}
+
+export type OrchestrationTierRecommendation = {
+  id: string
+  runID: string
+  taskID: string
+  routeDecisionID: string
+  explicitTier?: string
+  request: TypedJudgeChoiceRequest
+  result: TypedJudgeChoiceResult
+  time: number
+}
+
+export type OrchestrationReview = {
+  id: string
+  runID: string
+  taskID: string
+  attemptID: string
+  decision: "accepted" | "rejected"
+  note?: string
+  time: number
+}
+
+export type OrchestrationTriageLabel = {
+  id: string
+  runID: string
+  taskID: string
+  attemptID: string
+  decision: "looks_ready" | "needs_attention"
+  note?: string
+  time: number
+}
+
+export type OrchestrationHumanRequest = {
+  id: string
+  runID: string
+  taskID?: string
+  kind: "clarification" | "human_step" | "plan_approval" | "budget_exhausted" | "recovery"
+  prompt: string
+  choices: Array<string>
+  assumption?: string
+  status: "open" | "answered"
+  answer?: string
+  time: {
+    created: number
+    answered?: number
+  }
+}
+
+export type OrchestrationReassignment = {
+  id: string
+  runID: string
+  taskID: string
+  afterAttemptID: string
+  options: Array<OrchestrationReassignmentOption>
+  selected: OrchestrationReassignmentOption
+  chooser: "rule" | "jev" | "llm"
+  request?: TypedJudgeChoiceRequest
+  result?: TypedJudgeChoiceResult
+  time: number
+}
+
+export type OrchestrationDetail = {
+  run: OrchestrationRun
+  plans: Array<OrchestrationPlan>
+  deliveries: Array<OrchestrationDelivery>
+  integrations: Array<OrchestrationIntegration>
+  followUps: Array<OrchestrationFollowUp>
+  queuedFollowUps: Array<OrchestrationQueuedFollowUp>
+  tasks: Array<OrchestrationTask>
+  dependencies: Array<OrchestrationDependency>
+  attempts: Array<OrchestrationAttempt>
+  routeDecisions: Array<OrchestrationRouteDecision>
+  evaluations: Array<OrchestrationEvaluation>
+  judgments: Array<OrchestrationJudgment>
+  tierRecommendations: Array<OrchestrationTierRecommendation>
+  reviews: Array<OrchestrationReview>
+  triageLabels: Array<OrchestrationTriageLabel>
+  humanRequests: Array<OrchestrationHumanRequest>
+  reassignments: Array<OrchestrationReassignment>
+}
+
+export type OrchestrationPolicyCatalog = {
+  defaultPolicy?: string
+  policies: Array<OrchestrationPolicySnapshot>
+}
+
+export type OrchestrationJudgeComparison = {
+  arms: Array<{
+    name: string
+    provider: string
+    calls: number
+    valid: number
+    fallbacks: number
+    authoritative: number
+    latencyP50Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    latencyP95Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    inputTokens: number
+    outputTokens: number
+    estimatedCostUsd: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    humanOverrides: number
+    downstreamGaps: number
+    labeled: number
+    labelAgreement: number
+  }>
+  pairs: Array<{
+    first: string
+    second: string
+    compared: number
+    agreed: number
+    confusion: {
+      [key: string]: number
+    }
+  }>
+  disagreements: Array<{
+    runID: string
+    taskID: string
+    attemptID: string
+    first: string
+    firstDecision: string
+    second: string
+    secondDecision: string
+  }>
+}
+
+export type OrchestrationPolicyComparison = {
+  policies: Array<{
+    name: string
+    runs: number
+    delivered: number
+    acceptedTasks: number
+    attempts: number
+    reassignments: number
+    humanRequests: number
+    integrations: number
+    attemptsPerAcceptedTask?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    reassignmentsPerAcceptedTask?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    humanRequestsPerDelivery?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    timeToDeliveryMs?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    inputTokens: number
+    outputTokens: number
+    estimatedCostUsd: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    measuredCalls: number
+    examples: Array<string>
+  }>
+}
+
+export type OrchestrationReviewPacket = {
+  run: OrchestrationRun
+  task: OrchestrationTask
+  attempt: {
+    id: string
+    runID: string
+    taskID: string
+    kind: "initial" | "revision" | "reassignment" | "rebase"
+    status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+    candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+    sessionID?: string
+    location?: LocationRef
+    time: {
+      created: number
+      updated: number
+      completed?: number
+    }
+  }
+  routeDecision?: OrchestrationRouteDecision
+  evaluations: Array<OrchestrationEvaluation>
+}
+
+export type OrchestrationTierCalibration = {
+  total: number
+  valid: number
+  invalid: number
+  unavailable: number
+  timedOut: number
+  labeled: number
+  agreement: number
+  latency: {
+    calls: number
+    meanMs?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    p50Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    p95Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+  usage: {
+    measuredCalls: number
+    inputTokens: number
+    outputTokens: number
+    pricedCalls: number
+    estimatedCostUsd: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+}
+
+export type OrchestrationCalibrationGate = {
+  eligibleForPolicyReview: boolean
+  unmet: Array<"sample_size" | "validity" | "agreement" | "latency" | "label_conflicts">
+  uniqueRequests: number
+  uniqueLabeled: number
+  labelConflicts: number
+  minimumLabeled: number
+  minimumValidityPercent: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  minimumAgreementPercent: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  maximumP95Ms: number
+}
+
+export type OrchestrationJudgmentCalibration = {
+  total: number
+  valid: number
+  invalid: number
+  unavailable: number
+  timedOut: number
+  labeled: number
+  agreement: number
+  confusion: {
+    predictedReadyLabeledReady: number
+    predictedReadyLabeledAttention: number
+    predictedAttentionLabeledReady: number
+    predictedAttentionLabeledAttention: number
+  }
+  latency: {
+    calls: number
+    meanMs?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    p50Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    p95Ms?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+  usage: {
+    measuredCalls: number
+    inputTokens: number
+    outputTokens: number
+    pricedCalls: number
+    estimatedCostUsd: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+  }
+  tier: OrchestrationTierCalibration
+  promotion: {
+    attemptReview: OrchestrationCalibrationGate
+    tier: OrchestrationCalibrationGate
+  }
+}
+
+export type OrchestrationIntegrationTargets = {
+  branches: Array<string>
+  worktrees: Array<{
+    branch: string
+    directory: string
+  }>
+}
+
+export type OrchestrationIntegrationPreflight = {
+  deliveryID: string
+  head: string
+  targetHead?: string
+  targetBranch?: string
+  targetDirectory?: string
+  targetDirty: boolean
+  targetMoved: boolean
+  cleanMerge: boolean
+  defaultBranchPush: boolean
+  commands: Array<string>
+  blockers: Array<string>
+  warnings: Array<string>
+}
+
 export type EventModelsDevRefreshed = {
   id: string
   type: "models-dev.refreshed"
@@ -6327,6 +9669,49 @@ export type EventSessionNextSynthetic = {
     sessionID: string
     messageID: string
     text: string
+  }
+}
+
+export type EventSessionNextControllerText = {
+  id: string
+  type: "session.next.controller.text"
+  properties: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    text: string
+    kind: "summary" | "milestone" | "transcript"
+  }
+}
+
+export type EventSessionNextControllerPart = {
+  id: string
+  type: "session.next.controller.part"
+  properties: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    kind: "clarification" | "plan" | "task" | "replan" | "human_request" | "delivery_review" | "integration"
+    title: string
+    summary: string
+    detail: {
+      [key: string]: unknown
+    }
+  }
+}
+
+export type EventSessionNextControllerPartUpdated = {
+  id: string
+  type: "session.next.controller.part.updated"
+  properties: {
+    timestamp: number
+    sessionID: string
+    messageID: string
+    title: string
+    summary: string
+    detail: {
+      [key: string]: unknown
+    }
   }
 }
 
@@ -6652,6 +10037,638 @@ export type EventSessionNextRevertCommitted = {
     timestamp: number
     sessionID: string
     messageID: string
+  }
+}
+
+export type OrchestrationPolicyJudge2 = {
+  provider: "jev" | "llm" | "experiment"
+  routeProfile?: string
+  labelSampleRate?: number | "NaN" | "Infinity" | "-Infinity"
+  experiment?: {
+    arms: {
+      [key: string]: {
+        provider: "jev" | "llm"
+        routeProfile?: string
+      }
+    }
+    assignment: "split" | "paired"
+    authoritative: string
+    seed: number
+  }
+}
+
+export type OrchestrationRouteProfile4 = {
+  name: string
+  unknownCapacity: "wait" | "allow"
+  exhausted: "wait_until_soonest_reset" | "fail"
+  maxCapacityAgeSeconds: number
+  quotaReserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<OrchestrationRouteCandidate>
+}
+
+export type OrchestrationPolicySnapshot4 = {
+  name: string
+  roles: OrchestrationPolicyRoles
+  tiers: {
+    [key: string]: string
+  }
+  checkPresets?: {
+    [key: string]: OrchestrationCheckPreset
+  }
+  escalationChain: Array<OrchestrationCapabilityTier>
+  budgets: {
+    maxRevisionsPerRoute: number
+    maxEscalations: number
+    maxRebasesPerTask?: number
+    maxReplans: number
+    maxAttempts?: number
+  }
+  acceptance: {
+    mode: "human" | "judge"
+    minConfidence: number | "NaN" | "Infinity" | "-Infinity"
+    skipJudgeOnRegression: boolean
+  }
+  planApproval: "auto" | "human"
+  clarify: "ask" | "assume"
+  integrationDefault?: "apply" | "commit" | "merge" | "push" | "pull_request" | "discard"
+  routeProfiles: Array<OrchestrationRouteProfile4>
+}
+
+export type EventOrchestrationRunCreated = {
+  id: string
+  type: "orchestration.run.created"
+  properties: {
+    runID: string
+    timestamp: number
+    projectID: string
+    objective: string
+    context?: string
+    policy?: OrchestrationPolicySnapshot4
+  }
+}
+
+export type EventOrchestrationRunStatusChanged = {
+  id: string
+  type: "orchestration.run.status.changed"
+  properties: {
+    runID: string
+    timestamp: number
+    status:
+      | "draft"
+      | "clarifying"
+      | "active"
+      | "reviewing_delivery"
+      | "delivered"
+      | "suspended"
+      | "completed"
+      | "failed"
+      | "cancelled"
+    retryAt?: number
+  }
+}
+
+export type EventOrchestrationRunSourceSet = {
+  id: string
+  type: "orchestration.run.source.set"
+  properties: {
+    runID: string
+    timestamp: number
+    source: LocationRef
+  }
+}
+
+export type EventOrchestrationRunWorkspaceSet = {
+  id: string
+  type: "orchestration.run.workspace.set"
+  properties: {
+    runID: string
+    timestamp: number
+    workspace: OrchestrationRunWorkspace
+  }
+}
+
+export type EventOrchestrationRunSessionLinked = {
+  id: string
+  type: "orchestration.run.session.linked"
+  properties: {
+    runID: string
+    timestamp: number
+    sessionID: string
+  }
+}
+
+export type EventOrchestrationTaskAdded = {
+  id: string
+  type: "orchestration.task.added"
+  properties: {
+    runID: string
+    timestamp: number
+    taskID: string
+    kind?: "agent" | "human"
+    title: string
+    description?: string
+    routeProfile?: string
+    capabilityTier?: string
+    checks?: Array<OrchestrationCheck>
+    acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+  }
+}
+
+export type OrchestrationRouteProfile5 = {
+  name: string
+  unknownCapacity: "wait" | "allow"
+  exhausted: "wait_until_soonest_reset" | "fail"
+  maxCapacityAgeSeconds: number
+  quotaReserves?: {
+    [key: string]: number | "NaN" | "Infinity" | "-Infinity"
+  }
+  privacy?: {
+    providers?: Array<string>
+    harnesses?: Array<string>
+    models?: Array<string>
+  }
+  candidates: Array<OrchestrationRouteCandidate>
+}
+
+export type OrchestrationCapacityMeter2 = {
+  id: string
+  state: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity"
+  timeRemaining?: number | "NaN" | "Infinity" | "-Infinity"
+  resetsAt?: number
+}
+
+export type OrchestrationHostResourceSnapshot2 = {
+  schema: 1
+  source: "host"
+  capturedAt: number
+  platform: string
+  architecture: string
+  totalMemoryBytes: number
+  freeMemoryBytes: number
+  cpuCount: number
+  load1: number | "NaN" | "Infinity" | "-Infinity"
+  load5: number | "NaN" | "Infinity" | "-Infinity"
+  load15: number | "NaN" | "Infinity" | "-Infinity"
+}
+
+export type OrchestrationRouteRejection2 = {
+  candidateID: string
+  code:
+    | "disabled"
+    | "privacy_disallowed"
+    | "tier_mismatch"
+    | "provider_unavailable"
+    | "capacity_unknown"
+    | "capacity_stale"
+    | "capacity_below_threshold"
+    | "harness_unavailable"
+    | "harness_unsupported"
+    | "host_memory_unknown"
+    | "host_memory_below_threshold"
+  message: string
+  meter?: string
+  remaining?: number | "NaN" | "Infinity" | "-Infinity"
+  required?: number | "NaN" | "Infinity" | "-Infinity"
+  availableBytes?: number
+  requiredBytes?: number
+  retryAt?: number
+}
+
+export type EventOrchestrationPlanProposed = {
+  id: string
+  type: "orchestration.plan.proposed"
+  properties: {
+    runID: string
+    timestamp: number
+    planID: string
+    output: OrchestrationPlanOutput
+    generation?: OrchestrationPlanGeneration
+  }
+}
+
+export type EventOrchestrationPlanApplied = {
+  id: string
+  type: "orchestration.plan.applied"
+  properties: {
+    runID: string
+    timestamp: number
+    planID: string
+    cancelTaskIDs?: Array<string>
+    tasks: Array<{
+      key: string
+      taskID: string
+    }>
+  }
+}
+
+export type OrchestrationDeliveryReview2 = {
+  decision: "delivered" | "gaps" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  clauses: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type EventOrchestrationDeliveryReviewed = {
+  id: string
+  type: "orchestration.delivery.reviewed"
+  properties: {
+    runID: string
+    timestamp: number
+    deliveryID: string
+    planID?: string
+    baseHead: string
+    head: string
+    changedFiles: number
+    review: OrchestrationDeliveryReview2
+  }
+}
+
+export type EventOrchestrationDeliverySummarized = {
+  id: string
+  type: "orchestration.delivery.summarized"
+  properties: {
+    runID: string
+    timestamp: number
+    deliveryID: string
+    summary: string
+    commitMessage: string
+    summaryGeneration?: OrchestrationPlanGeneration
+  }
+}
+
+export type EventOrchestrationIntegrationStarted = {
+  id: string
+  type: "orchestration.integration.started"
+  properties: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    deliveryID: string
+    options: OrchestrationIntegrationOptions
+  }
+}
+
+export type EventOrchestrationIntegrationStepRecorded = {
+  id: string
+  type: "orchestration.integration.step.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    step: OrchestrationIntegrationStep
+  }
+}
+
+export type EventOrchestrationIntegrationFinished = {
+  id: string
+  type: "orchestration.integration.finished"
+  properties: {
+    runID: string
+    timestamp: number
+    integrationID: string
+    status: "completed" | "failed"
+  }
+}
+
+export type EventOrchestrationIntegrationResumed = {
+  id: string
+  type: "orchestration.integration.resumed"
+  properties: {
+    runID: string
+    timestamp: number
+    integrationID: string
+  }
+}
+
+export type EventOrchestrationFollowUpStarted = {
+  id: string
+  type: "orchestration.follow-up.started"
+  properties: {
+    runID: string
+    timestamp: number
+    turnID: string
+    objective: string
+    context?: string
+    baseHead: string
+  }
+}
+
+export type EventOrchestrationFollowUpQueued = {
+  id: string
+  type: "orchestration.follow-up.queued"
+  properties: {
+    runID: string
+    timestamp: number
+    turnID: string
+    objective: string
+    context?: string
+  }
+}
+
+export type EventOrchestrationFollowUpDequeued = {
+  id: string
+  type: "orchestration.follow-up.dequeued"
+  properties: {
+    runID: string
+    timestamp: number
+    turnID: string
+  }
+}
+
+export type EventOrchestrationFollowUpSteered = {
+  id: string
+  type: "orchestration.follow-up.steered"
+  properties: {
+    runID: string
+    timestamp: number
+    turnID: string
+  }
+}
+
+export type EventOrchestrationTaskStatusChanged = {
+  id: string
+  type: "orchestration.task.status.changed"
+  properties: {
+    runID: string
+    timestamp: number
+    taskID: string
+    status:
+      | "draft"
+      | "ready"
+      | "blocked"
+      | "running"
+      | "evaluating"
+      | "awaiting_review"
+      | "waiting_on_human"
+      | "succeeded"
+      | "failed"
+      | "cancelled"
+      | "suspended"
+  }
+}
+
+export type EventOrchestrationDependencyAdded = {
+  id: string
+  type: "orchestration.dependency.added"
+  properties: {
+    runID: string
+    timestamp: number
+    taskID: string
+    dependsOnTaskID: string
+  }
+}
+
+export type EventOrchestrationAttemptCreated = {
+  id: string
+  type: "orchestration.attempt.created"
+  properties: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    kind?: "initial" | "revision" | "reassignment" | "rebase"
+    candidate?: OrchestrationDirectCandidate | OrchestrationHarnessCandidate
+    sessionID?: string
+    location?: LocationRef
+  }
+}
+
+export type EventOrchestrationAttemptPrepared = {
+  id: string
+  type: "orchestration.attempt.prepared"
+  properties: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    sessionID?: string
+    location: LocationRef
+  }
+}
+
+export type OrchestrationAttemptVerdictBase2 = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type OrchestrationAttemptVerdict3 = {
+  decision: "accept" | "revise" | "needs_human"
+  confidence: number | "NaN" | "Infinity" | "-Infinity"
+  gateFailures: Array<string>
+  criteria: Array<{
+    key: string
+    decision: "met" | "not_met" | "unclear"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }>
+  overall?: {
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+  experiment?: {
+    assignment: "split" | "paired"
+    authoritativeArm: string
+    seed: number
+    arms: Array<{
+      arm: string
+      verdict: OrchestrationAttemptVerdictBase2
+    }>
+  }
+}
+
+export type EventOrchestrationAttemptVerdictRecorded = {
+  id: string
+  type: "orchestration.attempt.verdict.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    taskID: string
+    attemptID: string
+    verdict: OrchestrationAttemptVerdict3
+  }
+}
+
+export type EventOrchestrationAttemptFeedbackRecorded = {
+  id: string
+  type: "orchestration.attempt.feedback.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    taskID: string
+    attemptID: string
+    feedback: OrchestrationAttemptFeedback
+  }
+}
+
+export type EventOrchestrationHumanRequested = {
+  id: string
+  type: "orchestration.human.requested"
+  properties: {
+    runID: string
+    timestamp: number
+    requestID: string
+    taskID?: string
+    kind: "clarification" | "human_step" | "plan_approval" | "budget_exhausted" | "recovery"
+    prompt: string
+    choices: Array<string>
+    assumption?: string
+  }
+}
+
+export type EventOrchestrationHumanRequestAnswered = {
+  id: string
+  type: "orchestration.human.request.answered"
+  properties: {
+    runID: string
+    timestamp: number
+    requestID: string
+    answer: string
+  }
+}
+
+export type EventOrchestrationReassignmentRecorded = {
+  id: string
+  type: "orchestration.reassignment.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    reassignmentID: string
+    taskID: string
+    afterAttemptID: string
+    options: Array<OrchestrationReassignmentOption>
+    selected: OrchestrationReassignmentOption
+    chooser: "rule" | "jev" | "llm"
+    request?: TypedJudgeChoiceRequest
+    result?: TypedJudgeChoiceResult
+  }
+}
+
+export type EventOrchestrationAttemptStatusChanged = {
+  id: string
+  type: "orchestration.attempt.status.changed"
+  properties: {
+    runID: string
+    timestamp: number
+    attemptID: string
+    taskID: string
+    status: "pending" | "running" | "evaluating" | "succeeded" | "failed" | "interrupted" | "abandoned"
+    completed?: number
+  }
+}
+
+export type EventOrchestrationRouteDecided = {
+  id: string
+  type: "orchestration.route.decided"
+  properties: {
+    runID: string
+    timestamp: number
+    decisionID: string
+    taskID: string
+    attemptID?: string
+    resolution: OrchestrationRouteResolution
+  }
+}
+
+export type EventOrchestrationEvaluationRecorded = {
+  id: string
+  type: "orchestration.evaluation.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    evaluationID: string
+    taskID: string
+    attemptID: string
+    kind: string
+    status: "passed" | "failed" | "indeterminate"
+    evidence: {
+      [key: string]: unknown
+    }
+  }
+}
+
+export type EventOrchestrationJudgmentRecorded = {
+  id: string
+  type: "orchestration.judgment.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    judgmentID: string
+    taskID: string
+    attemptID: string
+    mode: "shadow"
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type EventOrchestrationTierRecommended = {
+  id: string
+  type: "orchestration.tier.recommended"
+  properties: {
+    runID: string
+    timestamp: number
+    recommendationID: string
+    taskID: string
+    routeDecisionID: string
+    explicitTier?: string
+    request: TypedJudgeChoiceRequest
+    result: TypedJudgeChoiceResult
+  }
+}
+
+export type EventOrchestrationReviewRecorded = {
+  id: string
+  type: "orchestration.review.recorded"
+  properties: {
+    runID: string
+    timestamp: number
+    reviewID: string
+    taskID: string
+    attemptID: string
+    decision: "accepted" | "rejected"
+    note?: string
+  }
+}
+
+export type EventOrchestrationTriageLabeled = {
+  id: string
+  type: "orchestration.triage.labeled"
+  properties: {
+    runID: string
+    timestamp: number
+    labelID: string
+    taskID: string
+    attemptID: string
+    decision: "looks_ready" | "needs_attention"
+    note?: string
   }
 }
 
@@ -8202,17 +12219,19 @@ export type VcsDiffData = {
   query: {
     directory?: string
     workspace?: string
-    mode: "git" | "branch"
+    mode: "git" | "branch" | "range"
     context?: number
+    base?: string
+    head?: string
   }
   url: "/vcs/diff"
 }
 
 export type VcsDiffErrors = {
   /**
-   * Bad request
+   * VcsDiffRangeError | InvalidRequestError
    */
-  400: BadRequestError
+  400: VcsDiffRangeError | InvalidRequestError
 }
 
 export type VcsDiffError = VcsDiffErrors[keyof VcsDiffErrors]
@@ -11256,6 +15275,7 @@ export type V2HealthGetResponses = {
    */
   200: {
     healthy: true
+    protocol: "v2"
   }
 }
 
@@ -11584,6 +15604,10 @@ export type V2SessionPromptErrors = {
    * ConflictError
    */
   409: ConflictError
+  /**
+   * ServiceUnavailableError
+   */
+  503: ServiceUnavailableError
 }
 
 export type V2SessionPromptError = V2SessionPromptErrors[keyof V2SessionPromptErrors]
@@ -13522,9 +17546,11 @@ export type V2ProjectCopyRemoveResponse = V2ProjectCopyRemoveResponses[keyof V2P
 
 export type V2ProjectCopyCreateData = {
   body?: {
-    strategy: string
+    strategy: OrchestrationCapabilityTier
     directory: string
     name?: string
+    revision?: string
+    branch?: string
   }
   path: {
     projectID: string
@@ -13587,6 +17613,1831 @@ export type V2ProjectCopyRefreshResponses = {
 }
 
 export type V2ProjectCopyRefreshResponse = V2ProjectCopyRefreshResponses[keyof V2ProjectCopyRefreshResponses]
+
+export type V2OrchestrationListData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration"
+}
+
+export type V2OrchestrationListErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationListError = V2OrchestrationListErrors[keyof V2OrchestrationListErrors]
+
+export type V2OrchestrationListResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: Array<OrchestrationRun>
+  }
+}
+
+export type V2OrchestrationListResponse = V2OrchestrationListResponses[keyof V2OrchestrationListResponses]
+
+export type V2OrchestrationCreateData = {
+  body: {
+    objective: string
+    policy?: string
+  }
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration"
+}
+
+export type V2OrchestrationCreateErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationCreateError = V2OrchestrationCreateErrors[keyof V2OrchestrationCreateErrors]
+
+export type V2OrchestrationCreateResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationCreateResponse = V2OrchestrationCreateResponses[keyof V2OrchestrationCreateResponses]
+
+export type V2OrchestrationSummariesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/summaries"
+}
+
+export type V2OrchestrationSummariesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationSummariesError = V2OrchestrationSummariesErrors[keyof V2OrchestrationSummariesErrors]
+
+export type V2OrchestrationSummariesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: Array<OrchestrationRunSummary>
+  }
+}
+
+export type V2OrchestrationSummariesResponse =
+  V2OrchestrationSummariesResponses[keyof V2OrchestrationSummariesResponses]
+
+export type V2OrchestrationSubmitData = {
+  body: {
+    objective: string
+    policy?: string
+    judge?: "policy" | "jev" | "llm" | "experiment"
+    minConfidence?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    context?: string
+  }
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/submit"
+}
+
+export type V2OrchestrationSubmitErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationSubmitError = V2OrchestrationSubmitErrors[keyof V2OrchestrationSubmitErrors]
+
+export type V2OrchestrationSubmitResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationSubmitResponse = V2OrchestrationSubmitResponses[keyof V2OrchestrationSubmitResponses]
+
+export type V2OrchestrationPoliciesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/policy"
+}
+
+export type V2OrchestrationPoliciesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationPoliciesError = V2OrchestrationPoliciesErrors[keyof V2OrchestrationPoliciesErrors]
+
+export type V2OrchestrationPoliciesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationPolicyCatalog
+  }
+}
+
+export type V2OrchestrationPoliciesResponse = V2OrchestrationPoliciesResponses[keyof V2OrchestrationPoliciesResponses]
+
+export type V2OrchestrationCapacityData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/capacity"
+}
+
+export type V2OrchestrationCapacityErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationCapacityError = V2OrchestrationCapacityErrors[keyof V2OrchestrationCapacityErrors]
+
+export type V2OrchestrationCapacityResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationCapacitySnapshot
+  }
+}
+
+export type V2OrchestrationCapacityResponse = V2OrchestrationCapacityResponses[keyof V2OrchestrationCapacityResponses]
+
+export type V2OrchestrationJevStatusData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/judges/jev"
+}
+
+export type V2OrchestrationJevStatusErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationJevStatusError = V2OrchestrationJevStatusErrors[keyof V2OrchestrationJevStatusErrors]
+
+export type V2OrchestrationJevStatusResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: {
+      keyPresent: boolean
+      model: string
+    }
+  }
+}
+
+export type V2OrchestrationJevStatusResponse =
+  V2OrchestrationJevStatusResponses[keyof V2OrchestrationJevStatusResponses]
+
+export type V2OrchestrationTestJevData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/judges/jev/test"
+}
+
+export type V2OrchestrationTestJevErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationTestJevError = V2OrchestrationTestJevErrors[keyof V2OrchestrationTestJevErrors]
+
+export type V2OrchestrationTestJevResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: {
+      status: string
+      model: string
+      latencyMs: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+    }
+  }
+}
+
+export type V2OrchestrationTestJevResponse = V2OrchestrationTestJevResponses[keyof V2OrchestrationTestJevResponses]
+
+export type V2OrchestrationVerifyCheckPresetData = {
+  body?: never
+  path: {
+    name: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/check-presets/{name}/run"
+}
+
+export type V2OrchestrationVerifyCheckPresetErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationVerifyCheckPresetError =
+  V2OrchestrationVerifyCheckPresetErrors[keyof V2OrchestrationVerifyCheckPresetErrors]
+
+export type V2OrchestrationVerifyCheckPresetResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: Array<{
+      name: string
+      exitCode: number
+      stdout: string
+      stderr: string
+      truncated: boolean
+    }>
+  }
+}
+
+export type V2OrchestrationVerifyCheckPresetResponse =
+  V2OrchestrationVerifyCheckPresetResponses[keyof V2OrchestrationVerifyCheckPresetResponses]
+
+export type V2OrchestrationResourcesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/resources"
+}
+
+export type V2OrchestrationResourcesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationResourcesError = V2OrchestrationResourcesErrors[keyof V2OrchestrationResourcesErrors]
+
+export type V2OrchestrationResourcesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationResourceObservation
+  }
+}
+
+export type V2OrchestrationResourcesResponse =
+  V2OrchestrationResourcesResponses[keyof V2OrchestrationResourcesResponses]
+
+export type V2OrchestrationCompareJudgesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+    since?: string
+    role?: "attempt" | "delivery"
+  }
+  url: "/api/orchestration/judges/compare"
+}
+
+export type V2OrchestrationCompareJudgesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationCompareJudgesError =
+  V2OrchestrationCompareJudgesErrors[keyof V2OrchestrationCompareJudgesErrors]
+
+export type V2OrchestrationCompareJudgesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationJudgeComparison
+  }
+}
+
+export type V2OrchestrationCompareJudgesResponse =
+  V2OrchestrationCompareJudgesResponses[keyof V2OrchestrationCompareJudgesResponses]
+
+export type V2OrchestrationComparePoliciesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+    since?: string
+  }
+  url: "/api/orchestration/policies/compare"
+}
+
+export type V2OrchestrationComparePoliciesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationComparePoliciesError =
+  V2OrchestrationComparePoliciesErrors[keyof V2OrchestrationComparePoliciesErrors]
+
+export type V2OrchestrationComparePoliciesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationPolicyComparison
+  }
+}
+
+export type V2OrchestrationComparePoliciesResponse =
+  V2OrchestrationComparePoliciesResponses[keyof V2OrchestrationComparePoliciesResponses]
+
+export type V2OrchestrationLabelsData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/labels"
+}
+
+export type V2OrchestrationLabelsErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationLabelsError = V2OrchestrationLabelsErrors[keyof V2OrchestrationLabelsErrors]
+
+export type V2OrchestrationLabelsResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: Array<OrchestrationReviewPacket>
+  }
+}
+
+export type V2OrchestrationLabelsResponse = V2OrchestrationLabelsResponses[keyof V2OrchestrationLabelsResponses]
+
+export type V2OrchestrationCalibrationData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/calibration"
+}
+
+export type V2OrchestrationCalibrationErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationCalibrationError = V2OrchestrationCalibrationErrors[keyof V2OrchestrationCalibrationErrors]
+
+export type V2OrchestrationCalibrationResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationJudgmentCalibration
+  }
+}
+
+export type V2OrchestrationCalibrationResponse =
+  V2OrchestrationCalibrationResponses[keyof V2OrchestrationCalibrationResponses]
+
+export type V2OrchestrationAddTaskData = {
+  body: {
+    kind?: "agent" | "human"
+    title: string
+    description?: string
+    routeProfile?: string
+    capabilityTier?: OrchestrationCapabilityTier
+    checks?: Array<OrchestrationCheck>
+    acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+  }
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task"
+}
+
+export type V2OrchestrationAddTaskErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationAddTaskError = V2OrchestrationAddTaskErrors[keyof V2OrchestrationAddTaskErrors]
+
+export type V2OrchestrationAddTaskResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationAddTaskResponse = V2OrchestrationAddTaskResponses[keyof V2OrchestrationAddTaskResponses]
+
+export type V2OrchestrationProposePlanData = {
+  body: OrchestrationPlanOutput
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/plan"
+}
+
+export type V2OrchestrationProposePlanErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationProposePlanError = V2OrchestrationProposePlanErrors[keyof V2OrchestrationProposePlanErrors]
+
+export type V2OrchestrationProposePlanResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationProposePlanResponse =
+  V2OrchestrationProposePlanResponses[keyof V2OrchestrationProposePlanResponses]
+
+export type V2OrchestrationGeneratePlanData = {
+  body: {
+    profile?: string
+    context?: string
+  }
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/plan/generate"
+}
+
+export type V2OrchestrationGeneratePlanErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationGeneratePlanError =
+  V2OrchestrationGeneratePlanErrors[keyof V2OrchestrationGeneratePlanErrors]
+
+export type V2OrchestrationGeneratePlanResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationGeneratePlanResponse =
+  V2OrchestrationGeneratePlanResponses[keyof V2OrchestrationGeneratePlanResponses]
+
+export type V2OrchestrationApplyPlanData = {
+  body?: never
+  path: {
+    runID: string
+    planID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/plan/{planID}/apply"
+}
+
+export type V2OrchestrationApplyPlanErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationApplyPlanError = V2OrchestrationApplyPlanErrors[keyof V2OrchestrationApplyPlanErrors]
+
+export type V2OrchestrationApplyPlanResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationApplyPlanResponse =
+  V2OrchestrationApplyPlanResponses[keyof V2OrchestrationApplyPlanResponses]
+
+export type V2OrchestrationAddDependencyData = {
+  body: {
+    taskID: string
+    dependsOnTaskID: string
+  }
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/dependency"
+}
+
+export type V2OrchestrationAddDependencyErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationAddDependencyError =
+  V2OrchestrationAddDependencyErrors[keyof V2OrchestrationAddDependencyErrors]
+
+export type V2OrchestrationAddDependencyResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationAddDependencyResponse =
+  V2OrchestrationAddDependencyResponses[keyof V2OrchestrationAddDependencyResponses]
+
+export type V2OrchestrationStartData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/start"
+}
+
+export type V2OrchestrationStartErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationStartError = V2OrchestrationStartErrors[keyof V2OrchestrationStartErrors]
+
+export type V2OrchestrationStartResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationStartResponse = V2OrchestrationStartResponses[keyof V2OrchestrationStartResponses]
+
+export type V2OrchestrationCancelData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/cancel"
+}
+
+export type V2OrchestrationCancelErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationCancelError = V2OrchestrationCancelErrors[keyof V2OrchestrationCancelErrors]
+
+export type V2OrchestrationCancelResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationCancelResponse = V2OrchestrationCancelResponses[keyof V2OrchestrationCancelResponses]
+
+export type V2OrchestrationIntegrationTargetsData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/integration/targets"
+}
+
+export type V2OrchestrationIntegrationTargetsErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationIntegrationTargetsError =
+  V2OrchestrationIntegrationTargetsErrors[keyof V2OrchestrationIntegrationTargetsErrors]
+
+export type V2OrchestrationIntegrationTargetsResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationIntegrationTargets
+  }
+}
+
+export type V2OrchestrationIntegrationTargetsResponse =
+  V2OrchestrationIntegrationTargetsResponses[keyof V2OrchestrationIntegrationTargetsResponses]
+
+export type V2OrchestrationIntegrationPreflightData = {
+  body: OrchestrationIntegrationOptions
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/integration/preflight"
+}
+
+export type V2OrchestrationIntegrationPreflightErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationIntegrationPreflightError =
+  V2OrchestrationIntegrationPreflightErrors[keyof V2OrchestrationIntegrationPreflightErrors]
+
+export type V2OrchestrationIntegrationPreflightResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationIntegrationPreflight
+  }
+}
+
+export type V2OrchestrationIntegrationPreflightResponse =
+  V2OrchestrationIntegrationPreflightResponses[keyof V2OrchestrationIntegrationPreflightResponses]
+
+export type V2OrchestrationIntegrateData = {
+  body: OrchestrationIntegrationOptions
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/integration"
+}
+
+export type V2OrchestrationIntegrateErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationIntegrateError = V2OrchestrationIntegrateErrors[keyof V2OrchestrationIntegrateErrors]
+
+export type V2OrchestrationIntegrateResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationIntegrateResponse =
+  V2OrchestrationIntegrateResponses[keyof V2OrchestrationIntegrateResponses]
+
+export type V2OrchestrationRetryIntegrationData = {
+  body?: never
+  path: {
+    runID: string
+    integrationID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/integration/{integrationID}/retry"
+}
+
+export type V2OrchestrationRetryIntegrationErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationRetryIntegrationError =
+  V2OrchestrationRetryIntegrationErrors[keyof V2OrchestrationRetryIntegrationErrors]
+
+export type V2OrchestrationRetryIntegrationResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationRetryIntegrationResponse =
+  V2OrchestrationRetryIntegrationResponses[keyof V2OrchestrationRetryIntegrationResponses]
+
+export type V2OrchestrationFollowUpData = {
+  body: {
+    objective: string
+    context?: string
+  }
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/follow-up"
+}
+
+export type V2OrchestrationFollowUpErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationFollowUpError = V2OrchestrationFollowUpErrors[keyof V2OrchestrationFollowUpErrors]
+
+export type V2OrchestrationFollowUpResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationFollowUpResponse = V2OrchestrationFollowUpResponses[keyof V2OrchestrationFollowUpResponses]
+
+export type V2OrchestrationSteerFollowUpData = {
+  body?: never
+  path: {
+    runID: string
+    turnID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/follow-up/{turnID}/steer"
+}
+
+export type V2OrchestrationSteerFollowUpErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationSteerFollowUpError =
+  V2OrchestrationSteerFollowUpErrors[keyof V2OrchestrationSteerFollowUpErrors]
+
+export type V2OrchestrationSteerFollowUpResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationSteerFollowUpResponse =
+  V2OrchestrationSteerFollowUpResponses[keyof V2OrchestrationSteerFollowUpResponses]
+
+export type V2OrchestrationReviewPacketData = {
+  body?: never
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/review-packet"
+}
+
+export type V2OrchestrationReviewPacketErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationReviewPacketError =
+  V2OrchestrationReviewPacketErrors[keyof V2OrchestrationReviewPacketErrors]
+
+export type V2OrchestrationReviewPacketResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationReviewPacket
+  }
+}
+
+export type V2OrchestrationReviewPacketResponse =
+  V2OrchestrationReviewPacketResponses[keyof V2OrchestrationReviewPacketResponses]
+
+export type V2OrchestrationLabelTriageData = {
+  body: {
+    decision: "looks_ready" | "needs_attention"
+    note?: string
+  }
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/triage"
+}
+
+export type V2OrchestrationLabelTriageErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationLabelTriageError = V2OrchestrationLabelTriageErrors[keyof V2OrchestrationLabelTriageErrors]
+
+export type V2OrchestrationLabelTriageResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationTriageLabel
+  }
+}
+
+export type V2OrchestrationLabelTriageResponse =
+  V2OrchestrationLabelTriageResponses[keyof V2OrchestrationLabelTriageResponses]
+
+export type V2OrchestrationAcceptData = {
+  body: {
+    note?: string
+  }
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/accept"
+}
+
+export type V2OrchestrationAcceptErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationAcceptError = V2OrchestrationAcceptErrors[keyof V2OrchestrationAcceptErrors]
+
+export type V2OrchestrationAcceptResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationAcceptResponse = V2OrchestrationAcceptResponses[keyof V2OrchestrationAcceptResponses]
+
+export type V2OrchestrationRejectData = {
+  body: {
+    note?: string
+  }
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/reject"
+}
+
+export type V2OrchestrationRejectErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationRejectError = V2OrchestrationRejectErrors[keyof V2OrchestrationRejectErrors]
+
+export type V2OrchestrationRejectResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationRejectResponse = V2OrchestrationRejectResponses[keyof V2OrchestrationRejectResponses]
+
+export type V2OrchestrationReopenData = {
+  body: {
+    feedback: string
+  }
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/reopen"
+}
+
+export type V2OrchestrationReopenErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationReopenError = V2OrchestrationReopenErrors[keyof V2OrchestrationReopenErrors]
+
+export type V2OrchestrationReopenResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationReopenResponse = V2OrchestrationReopenResponses[keyof V2OrchestrationReopenResponses]
+
+export type V2OrchestrationAnswerRequestData = {
+  body: {
+    answer: string
+  }
+  path: {
+    runID: string
+    requestID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/request/{requestID}/answer"
+}
+
+export type V2OrchestrationAnswerRequestErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationAnswerRequestError =
+  V2OrchestrationAnswerRequestErrors[keyof V2OrchestrationAnswerRequestErrors]
+
+export type V2OrchestrationAnswerRequestResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationAnswerRequestResponse =
+  V2OrchestrationAnswerRequestResponses[keyof V2OrchestrationAnswerRequestResponses]
+
+export type V2OrchestrationRetryData = {
+  body?: never
+  path: {
+    runID: string
+    taskID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}/task/{taskID}/retry"
+}
+
+export type V2OrchestrationRetryErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+  /**
+   * OrchestrationOperationError
+   */
+  409: OrchestrationOperationError
+}
+
+export type V2OrchestrationRetryError = V2OrchestrationRetryErrors[keyof V2OrchestrationRetryErrors]
+
+export type V2OrchestrationRetryResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationRetryResponse = V2OrchestrationRetryResponses[keyof V2OrchestrationRetryResponses]
+
+export type V2OrchestrationRouteProfilesData = {
+  body?: never
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/route-profile"
+}
+
+export type V2OrchestrationRouteProfilesErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+}
+
+export type V2OrchestrationRouteProfilesError =
+  V2OrchestrationRouteProfilesErrors[keyof V2OrchestrationRouteProfilesErrors]
+
+export type V2OrchestrationRouteProfilesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: Array<OrchestrationRouteProfile>
+  }
+}
+
+export type V2OrchestrationRouteProfilesResponse =
+  V2OrchestrationRouteProfilesResponses[keyof V2OrchestrationRouteProfilesResponses]
+
+export type V2OrchestrationResolveRouteData = {
+  body: {
+    profile?: string
+    capabilityTier?: OrchestrationCapabilityTier
+  }
+  path?: never
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/route/resolve"
+}
+
+export type V2OrchestrationResolveRouteErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * RouteProfileNotFoundError
+   */
+  404: RouteProfileNotFoundError
+}
+
+export type V2OrchestrationResolveRouteError =
+  V2OrchestrationResolveRouteErrors[keyof V2OrchestrationResolveRouteErrors]
+
+export type V2OrchestrationResolveRouteResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationRouteResolution
+  }
+}
+
+export type V2OrchestrationResolveRouteResponse =
+  V2OrchestrationResolveRouteResponses[keyof V2OrchestrationResolveRouteResponses]
+
+export type V2OrchestrationHistoryData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+    limit?: string
+    after?: string
+  }
+  url: "/api/orchestration/{runID}/history"
+}
+
+export type V2OrchestrationHistoryErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationHistoryError = V2OrchestrationHistoryErrors[keyof V2OrchestrationHistoryErrors]
+
+export type V2OrchestrationHistoryResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: {
+      data: Array<
+        | OrchestrationRunCreated
+        | OrchestrationRunStatusChanged
+        | OrchestrationRunSourceSet
+        | OrchestrationRunWorkspaceSet
+        | OrchestrationRunSessionLinked
+        | OrchestrationTaskAdded
+        | OrchestrationPlanProposed
+        | OrchestrationPlanApplied
+        | OrchestrationDeliveryReviewed
+        | OrchestrationDeliverySummarized
+        | OrchestrationIntegrationStarted
+        | OrchestrationIntegrationStepRecorded
+        | OrchestrationIntegrationFinished
+        | OrchestrationIntegrationResumed
+        | OrchestrationFollowUpStarted
+        | OrchestrationFollowUpQueued
+        | OrchestrationFollowUpDequeued
+        | OrchestrationFollowUpSteered
+        | OrchestrationTaskStatusChanged
+        | OrchestrationDependencyAdded
+        | OrchestrationAttemptCreated
+        | OrchestrationAttemptPrepared
+        | OrchestrationAttemptVerdictRecorded
+        | OrchestrationAttemptFeedbackRecorded
+        | OrchestrationHumanRequested
+        | OrchestrationHumanRequestAnswered
+        | OrchestrationReassignmentRecorded
+        | OrchestrationAttemptStatusChanged
+        | OrchestrationRouteDecided
+        | OrchestrationEvaluationRecorded
+        | OrchestrationJudgmentRecorded
+        | OrchestrationTierRecommended
+        | OrchestrationReviewRecorded
+        | OrchestrationTriageLabeled
+      >
+      hasMore: boolean
+    }
+  }
+}
+
+export type V2OrchestrationHistoryResponse = V2OrchestrationHistoryResponses[keyof V2OrchestrationHistoryResponses]
+
+export type V2OrchestrationEventsData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+    after?: string
+  }
+  url: "/api/orchestration/{runID}/event"
+}
+
+export type V2OrchestrationEventsErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationEventsError = V2OrchestrationEventsErrors[keyof V2OrchestrationEventsErrors]
+
+export type V2OrchestrationEventsResponses = {
+  /**
+   * Success
+   */
+  200: {
+    id: string
+    event: string
+    data: string
+  }
+}
+
+export type V2OrchestrationEventsResponse = V2OrchestrationEventsResponses[keyof V2OrchestrationEventsResponses]
+
+export type V2OrchestrationGetData = {
+  body?: never
+  path: {
+    runID: string
+  }
+  query?: {
+    location?: {
+      directory?: string
+      workspace?: string
+    }
+  }
+  url: "/api/orchestration/{runID}"
+}
+
+export type V2OrchestrationGetErrors = {
+  /**
+   * InvalidRequestError
+   */
+  400: InvalidRequestError
+  /**
+   * UnauthorizedError
+   */
+  401: UnauthorizedError
+  /**
+   * OrchestrationNotFoundError
+   */
+  404: OrchestrationNotFoundError
+}
+
+export type V2OrchestrationGetError = V2OrchestrationGetErrors[keyof V2OrchestrationGetErrors]
+
+export type V2OrchestrationGetResponses = {
+  /**
+   * Success
+   */
+  200: {
+    location: LocationInfo
+    data: OrchestrationDetail
+  }
+}
+
+export type V2OrchestrationGetResponse = V2OrchestrationGetResponses[keyof V2OrchestrationGetResponses]
 
 export type PtyConnectData = {
   body?: never

@@ -2,6 +2,8 @@ import { castDraft, produce, type WritableDraft } from "immer"
 import { Effect } from "effect"
 import { SessionEvent } from "./event"
 import { SessionMessage } from "./message"
+import { Model } from "@opencode-ai/schema/model"
+import { Provider } from "@opencode-ai/schema/provider"
 
 export type MemoryState = {
   messages: SessionMessage.Message[]
@@ -157,6 +159,55 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
           }),
         )
       },
+      "session.next.controller.text": (event) =>
+        adapter.appendMessage(
+          SessionMessage.Assistant.make({
+            id: event.data.messageID,
+            type: "assistant",
+            agent: "orchestrate",
+            model: Model.Ref.make({ id: Model.ID.make("controller"), providerID: Provider.ID.make("orchestration") }),
+            metadata: { orchestration: { kind: event.data.kind } },
+            content: [SessionMessage.AssistantText.make({ type: "text", id: event.data.messageID, text: event.data.text })],
+            finish: "stop",
+            cost: 0,
+            tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+            time: { created: event.data.timestamp, completed: event.data.timestamp },
+          }),
+        ),
+      "session.next.controller.part": (event) =>
+        adapter.appendMessage(
+          SessionMessage.Assistant.make({
+            id: event.data.messageID,
+            type: "assistant",
+            agent: "orchestrate",
+            model: Model.Ref.make({ id: Model.ID.make("controller"), providerID: Provider.ID.make("orchestration") }),
+            metadata: { orchestration: { kind: event.data.kind } },
+            content: [SessionMessage.AssistantTool.make({
+              type: "tool",
+              id: event.data.messageID,
+              name: "orchestration",
+              state: SessionMessage.ToolStateCompleted.make({
+                status: "completed",
+                input: { kind: event.data.kind, title: event.data.title },
+                content: [{ type: "text", text: event.data.summary }],
+                structured: event.data.detail,
+              }),
+              time: { created: event.data.timestamp, ran: event.data.timestamp, completed: event.data.timestamp },
+            })],
+            finish: "stop",
+            cost: 0,
+            tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+            time: { created: event.data.timestamp, completed: event.data.timestamp },
+          }),
+        ),
+      "session.next.controller.part.updated": (event) =>
+        updateOwnedAssistant(event.data.messageID, (draft) => {
+          const tool = draft.content.find((item) => item.type === "tool" && item.id === event.data.messageID)
+          if (!tool || tool.type !== "tool" || tool.state.status !== "completed") return
+          tool.state.input = { ...tool.state.input, title: event.data.title }
+          tool.state.content = [{ type: "text", text: event.data.summary }]
+          tool.state.structured = event.data.detail
+        }),
       "session.next.shell.started": (event) => {
         return adapter.appendMessage(
           SessionMessage.Shell.make({

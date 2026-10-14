@@ -103,13 +103,15 @@ import { legacySessionHref, requireServerKey, sessionHref } from "@/utils/sessio
 import { useUsageExceededDialogs } from "./session/usage-exceeded-dialogs"
 import { createSessionOwnership } from "./session/session-ownership"
 import { createSessionLineage } from "./session/session-lineage"
+import { OrchestrationRunContext, useOrchestrationRun } from "./session/orchestration-run"
+import { Schema } from "effect"
 
 type FollowupItem = FollowupDraft & { id: string }
 type FollowupEdit = Pick<FollowupItem, "id" | "prompt" | "context">
 const emptyFollowups: FollowupItem[] = []
 
-type ChangeMode = "git" | "branch" | "turn"
-type VcsMode = "git" | "branch"
+type ChangeMode = "git" | "branch" | "turn" | "run" | "delivery" | `task:${string}` | `attempt:${string}`
+type VcsMode = Exclude<ChangeMode, "turn">
 
 const sessionViewState = () => ({
   messageId: undefined as string | undefined,
@@ -371,7 +373,7 @@ export default function Page() {
   const location = useLocation()
   const navigate = useNavigate()
   const { params, sessionKey, workspaceKey, tabs, view } = useSessionLayout()
-  const reviewMode = () => view().review.mode() ?? "git"
+  const reviewMode = () => view().review.mode() ?? (params.id?.startsWith("ses_orch_") ? "delivery" : "git")
   const reviewFile = () => view().review.file()
   const sessionOwnership = createSessionOwnership(sessionKey)
   const newSessionDesign = createMemo(() => settings.general.newLayoutDesigns())
@@ -531,9 +533,16 @@ export default function Page() {
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
   }
 
+  createEffect(on(() => params.id, (id) => {
+    if (!id?.startsWith("ses_orch_") || !newSessionDesign() || !isDesktop()) return
+    openReviewPanel()
+    if (view().review.mode() === "git") view().review.setMode("delivery")
+  }))
+
   const info = createMemo(() => (params.id ? sync().session.get(params.id) : undefined))
+  const run = useOrchestrationRun(() => params.id)
   const isChildSession = createMemo(() => !!info()?.parentID)
-  const canReview = createMemo(() => !!sync().project)
+  const canReview = createMemo(() => !!sync().project || !!run.runID())
   const reviewTab = createMemo(() => isDesktop())
   const tabState = createSessionTabs({
     tabs,
@@ -656,6 +665,18 @@ export default function Page() {
   })
   const changesOptions = createMemo<ChangeMode[]>(() => {
     const list: ChangeMode[] = []
+    if (run.runID()) {
+      list.push("delivery", "run")
+      const detail = run.detail()
+      detail?.tasks.forEach((task) => {
+        if (detail.evaluations.some((item) => item.taskID === task.id && item.kind === "git:commit" && item.status === "passed"))
+          list.push(`task:${task.id}`)
+      })
+      detail?.attempts.forEach((attempt) => {
+        if (detail.evaluations.some((item) => item.attemptID === attempt.id && item.kind === "git:commit" && item.status === "passed"))
+          list.push(`attempt:${attempt.id}`)
+      })
+    }
     const project = sync().project
     const vcs = sync().data.vcs
     if (project?.vcs === "git") list.push("git")
@@ -674,20 +695,45 @@ export default function Page() {
   )
   const vcsMode = createMemo<VcsMode | undefined>(() => {
     const mode = reviewMode()
-    if (mode === "git" || mode === "branch") return mode
+    if (mode === "git" || mode === "branch" || mode === "run" || mode === "delivery" || mode.startsWith("task:") || mode.startsWith("attempt:")) return mode as VcsMode
   })
   const vcsKey = createMemo(
     () =>
-      ["session-vcs", sdk().directory, sync().data.vcs?.branch ?? "", sync().data.vcs?.default_branch ?? ""] as const,
+      ["session-vcs", sdk().directory, sync().data.vcs?.branch ?? "", sync().data.vcs?.default_branch ?? "", run.detail()?.deliveries.at(-1)?.head ?? "", run.detail()?.evaluations.findLast((item) => item.kind === "git:merge")?.evidence.head ?? ""] as const,
   )
   const vcsQuery = createQuery(() => {
     const mode = vcsMode()
-    const enabled = wantsReview() && sync().project?.vcs === "git"
+    const enabled = wantsReview() && (sync().project?.vcs === "git" || !!run.runID())
 
     return {
       queryKey: [...vcsKey(), mode] as const,
       enabled,
-      queryFn: mode
+      queryFn: mode === "run" || mode === "delivery" || mode?.startsWith("task:") || mode?.startsWith("attempt:")
+        ? async () => {
+            const state = run.detail()
+            const delivery = state?.deliveries.at(-1)
+            const attempt = mode?.startsWith("attempt:")
+              ? state?.attempts.find((item) => item.id === mode.slice("attempt:".length))
+              : mode?.startsWith("task:")
+                ? state?.attempts.findLast((item) => item.taskID === mode.slice("task:".length) &&
+                  state.evaluations.some((evaluation) => evaluation.attemptID === item.id && evaluation.kind === "git:commit" && evaluation.status === "passed"))
+                : undefined
+            const commit = attempt && state?.evaluations.findLast((item) => item.attemptID === attempt.id && item.kind === "git:commit" && item.status === "passed")?.evidence.head
+            const head = mode === "run" ? state?.run.workspace?.runBranch : mode === "delivery" ? delivery?.head : typeof commit === "string" ? commit : undefined
+            const base = mode === "run" ? state?.run.workspace?.sourceHead : mode === "delivery" ? delivery?.baseHead : typeof commit === "string" ? `${commit}^` : undefined
+            if (!base || !head) return []
+            const query = new URLSearchParams({ directory: sdk().directory, mode: "range", base, head, context: "3" })
+            const response = await serverSDK().request(`/vcs/diff?${query}`)
+            if (!response.ok) throw new Error(await response.text())
+            return [...await Schema.decodeUnknownPromise(Schema.Array(Schema.Struct({
+              file: Schema.String,
+              patch: Schema.String,
+              additions: Schema.Number,
+              deletions: Schema.Number,
+              status: Schema.Literals(["added", "deleted", "modified"]),
+            })))(await response.json())]
+          }
+        : mode === "git" || mode === "branch"
         ? () =>
             sdk()
               .api.vcs.diff({ location: { directory: sdk().directory }, mode: mode === "git" ? "working" : mode })
@@ -701,7 +747,7 @@ export default function Page() {
   })
   const refreshVcs = debounce(() => void queryClient.invalidateQueries({ queryKey: vcsKey() }), 100)
   const reviewDiffs = () => {
-    if (reviewMode() === "git" || reviewMode() === "branch")
+    if (vcsMode())
       // avoids suspense
       return vcsQuery.isFetched ? (vcsQuery.data ?? []) : []
     return turnDiffs()
@@ -715,12 +761,14 @@ export default function Page() {
   const reviewCount = () => reviewDiffs().length
   const hasReview = () => reviewCount() > 0
   const reviewReady = () => {
-    if (reviewMode() === "git" || reviewMode() === "branch") return !vcsQuery.isPending
+    if (vcsMode()) return !vcsQuery.isPending
     return true
   }
   const loadReviewDiff = async (file: string, version?: number): Promise<VcsFileDiff | undefined> => {
     const mode = vcsMode()
     if (!mode) return
+    if (mode === "run" || mode === "delivery" || mode?.startsWith("task:") || mode?.startsWith("attempt:")) return vcsQuery.data?.find((diff) => diff.file === file)
+    if (mode !== "git" && mode !== "branch") return
     const root = reviewRootDirectory(sync().project?.worktree ?? sdk().directory)
     const directory = reviewDiffDirectory(root, file)
     const source = reviewDiffs().find((diff) => diff.file === file)
@@ -1162,6 +1210,14 @@ export default function Page() {
   })
 
   const changesLabel = (option: ChangeMode) => {
+    if (option === "delivery") return "This turn"
+    if (option === "run") return "Whole run"
+    if (option.startsWith("task:")) return `Task ▸ ${run.detail()?.tasks.find((item) => item.id === option.slice(5))?.title ?? option.slice(5)}`
+    if (option.startsWith("attempt:")) {
+      const attempt = run.detail()?.attempts.find((item) => item.id === option.slice(8))
+      const task = run.detail()?.tasks.find((item) => item.id === attempt?.taskID)
+      return `Attempt ▸ ${task?.title ?? "Task"} · ${option.slice(8)}`
+    }
     if (option === "git") return language.t("ui.sessionReview.title.git")
     if (option === "branch") return language.t("ui.sessionReview.title.branch")
     return language.t("ui.sessionReview.title.lastTurn")
@@ -1226,13 +1282,14 @@ export default function Page() {
   )
 
   const reviewEmptyText = createMemo(() => {
+    if (reviewMode() === "run" || reviewMode() === "delivery" || reviewMode().startsWith("task:") || reviewMode().startsWith("attempt:")) return "This run has no changes in the selected scope."
     if (reviewMode() === "git") return language.t("session.review.noUncommittedChanges")
     if (reviewMode() === "branch") return language.t("session.review.noBranchChanges")
     return language.t("session.review.noChanges")
   })
 
   const reviewEmpty = (input: { loadingClass: string; emptyClass: string }) => {
-    if (reviewMode() === "git" || reviewMode() === "branch") {
+    if (vcsMode()) {
       if (!reviewReady()) return <div class={input.loadingClass}>{language.t("session.review.loadingChanges")}</div>
       return empty(reviewEmptyText())
     }
@@ -1250,7 +1307,7 @@ export default function Page() {
   }
 
   const reviewEmptyV2 = () => {
-    if ((reviewMode() === "git" || reviewMode() === "branch") && !reviewReady()) {
+    if (vcsMode() && !reviewReady()) {
       return <div class="px-6 py-4 text-text-weak">{language.t("session.review.loadingChanges")}</div>
     }
     if (reviewMode() === "turn" && nogit()) {
@@ -2247,6 +2304,7 @@ export default function Page() {
   )
 
   return (
+    <OrchestrationRunContext.Provider value={run}>
     <SessionRouteFrame>
       <SessionHeader />
       <div
@@ -2387,5 +2445,6 @@ export default function Page() {
         <TerminalPanel />
       </Show>
     </SessionRouteFrame>
+    </OrchestrationRunContext.Provider>
   )
 }

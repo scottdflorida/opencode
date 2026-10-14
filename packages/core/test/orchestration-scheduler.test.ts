@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import { DateTime, Effect, Ref } from "effect"
+import { DateTime, Effect, Ref, Schema } from "effect"
 import { Orchestration } from "@opencode-ai/schema/orchestration"
 import { Project } from "@opencode-ai/schema/project"
+import { ConfigOrchestration } from "@opencode-ai/core/config/orchestration"
 import { OrchestrationScheduler } from "@opencode-ai/core/orchestration/scheduler"
 
 const now = DateTime.makeUnsafe(1_700_000_000_000)
@@ -13,14 +14,119 @@ function task(id: Orchestration.TaskID, status: Orchestration.TaskStatus): Orche
   return {
     id,
     runID,
+    kind: "agent",
     title: id,
     checks: [],
+    acceptanceCriteria: [],
     status,
     time: { created: now, updated: now },
   }
 }
 
 describe("OrchestrationScheduler", () => {
+  test("bounds tier classification input and rejects incomplete policies", () => {
+    const policy = Schema.decodeUnknownSync(ConfigOrchestration.TierClassifier)({
+      mode: "shadow",
+      tiers: { small: "Routine edits", large: "Complex architecture and debugging" },
+      fallback: "large",
+    })
+    const run: Orchestration.Run = {
+      id: runID,
+      projectID: Project.ID.make("project_scheduler"),
+      objective: "x".repeat(9_000),
+      status: "active",
+      time: { created: now, updated: now },
+    }
+    const request = OrchestrationScheduler.tierRecommendationRequest(run, task(firstID, "ready"), policy)
+    expect(request).toMatchObject({
+      purpose: "capability_tier",
+      fallback: "large",
+      state: { inputTruncated: true },
+      question: { criteria: { small: "Routine edits", large: "Complex architecture and debugging" } },
+    })
+    expect(
+      OrchestrationScheduler.tierRecommendationRequest(run, task(firstID, "ready"), {
+        ...policy,
+        fallback: Orchestration.CapabilityTier.make("missing"),
+      }),
+    ).toBeUndefined()
+  })
+
+  test("schedules only suspended tasks at their latest eligible reset", () => {
+    const detail: Orchestration.Detail = {
+      run: {
+        id: runID,
+        projectID: Project.ID.make("project_scheduler"),
+        objective: "Wait for quota",
+        status: "suspended",
+        time: { created: now, updated: now },
+      },
+      plans: [],
+      deliveries: [],
+      integrations: [],
+      followUps: [],
+      queuedFollowUps: [],
+      tasks: [task(firstID, "suspended"), task(secondID, "succeeded")],
+      dependencies: [],
+      attempts: [],
+      routeDecisions: [
+        {
+          id: Orchestration.RouteDecisionID.make("route_old"),
+          runID,
+          taskID: firstID,
+          resolution: {
+            status: "waiting",
+            profile: "frontier",
+            rejected: [],
+            capacityCapturedAt: now,
+            retryAt: DateTime.makeUnsafe(1_700_000_010_000),
+          },
+          time: now,
+        },
+        {
+          id: Orchestration.RouteDecisionID.make("route_new"),
+          runID,
+          taskID: firstID,
+          resolution: {
+            status: "waiting",
+            profile: "frontier",
+            rejected: [],
+            capacityCapturedAt: now,
+            retryAt: DateTime.makeUnsafe(1_700_000_120_000),
+          },
+          time: now,
+        },
+        {
+          id: Orchestration.RouteDecisionID.make("route_unrelated"),
+          runID,
+          taskID: secondID,
+          resolution: {
+            status: "waiting",
+            profile: "frontier",
+            rejected: [],
+            capacityCapturedAt: now,
+            retryAt: DateTime.makeUnsafe(1_700_000_030_000),
+          },
+          time: now,
+        },
+      ],
+      evaluations: [],
+      judgments: [],
+      tierRecommendations: [],
+      reviews: [],
+      triageLabels: [],
+      humanRequests: [],
+      reassignments: [],
+    }
+    expect(DateTime.toEpochMillis(OrchestrationScheduler.nextRetryAt(detail, now)!)).toBe(1_700_000_120_000)
+    expect(
+      DateTime.toEpochMillis(OrchestrationScheduler.nextRetryAt(detail, DateTime.makeUnsafe(1_700_000_100_000))!),
+    ).toBe(1_700_000_120_000)
+    expect(
+      DateTime.toEpochMillis(OrchestrationScheduler.nextRetryAt(detail, DateTime.makeUnsafe(1_700_000_150_000))!),
+    ).toBe(1_700_000_210_000)
+  })
+
   test("finds independent tasks that are ready together", () => {
     const detail: Orchestration.Detail = {
       run: {
@@ -30,13 +136,22 @@ describe("OrchestrationScheduler", () => {
         status: "active",
         time: { created: now, updated: now },
       },
+      plans: [],
+      deliveries: [],
+      integrations: [],
+      followUps: [],
+      queuedFollowUps: [],
       tasks: [task(firstID, "draft"), task(secondID, "draft")],
       dependencies: [],
       attempts: [],
       routeDecisions: [],
       evaluations: [],
       judgments: [],
+      tierRecommendations: [],
       reviews: [],
+      triageLabels: [],
+      humanRequests: [],
+      reassignments: [],
     }
 
     expect(OrchestrationScheduler.readyTaskIDs(detail)).toEqual([firstID, secondID])
@@ -71,13 +186,22 @@ describe("OrchestrationScheduler", () => {
         status: "active",
         time: { created: now, updated: now },
       },
+      plans: [],
+      deliveries: [],
+      integrations: [],
+      followUps: [],
+      queuedFollowUps: [],
       tasks: [task(firstID, "awaiting_review"), task(secondID, "blocked")],
       dependencies: [{ runID, taskID: secondID, dependsOnTaskID: firstID }],
       attempts: [],
       routeDecisions: [],
       evaluations: [],
       judgments: [],
+      tierRecommendations: [],
       reviews: [],
+      triageLabels: [],
+      humanRequests: [],
+      reassignments: [],
     }
 
     expect(OrchestrationScheduler.readyTaskIDs(detail)).toEqual([])

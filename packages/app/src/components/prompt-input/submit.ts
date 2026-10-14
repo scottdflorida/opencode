@@ -23,6 +23,11 @@ import { createPromptSubmissionState } from "./submission-state"
 import { normalizeSessionInfo } from "@/utils/session"
 import { Event } from "@opencode-ai/schema/event"
 import { blobDataUrl } from "@/utils/draft-store"
+import { useServerSDK } from "@/context/server-sdk"
+import { Schema } from "effect"
+import { Location } from "@opencode-ai/schema/location"
+import { Orchestration } from "@opencode-ai/schema/orchestration"
+import type { PromptInputControls } from "./contracts"
 
 type PendingPrompt = {
   abort: AbortController
@@ -229,11 +234,13 @@ type PromptSubmitInput = {
   onAbort?: () => void
   onSubmit?: () => void
   model?: ModelSelection
+  orchestration?: PromptInputControls["orchestration"]
 }
 
 export function createPromptSubmit(input: PromptSubmitInput) {
   const navigate = useNavigate()
   const sdk = useSDK()
+  const serverSDK = useServerSDK()
   const sync = useSync()
   const serverSync = useServerSync()
   const local = useLocal()
@@ -339,6 +346,63 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const currentModel = modelSelection.current()
     const currentAgent = local.agent.current()
     const variant = modelSelection.variant.current()
+    if (mode === "normal" && (currentAgent?.name === "orchestrate" || params.id?.startsWith("ses_orch_"))) {
+      if (images.length > 0) {
+        showToast({ title: "Attachments unavailable", description: "This run currently accepts text and file references." })
+        return
+      }
+      if (!text.trim()) {
+        showToast({ title: "Add an assignment", description: "Describe the work to start or continue this run." })
+        return
+      }
+      const query = new URLSearchParams({ "location[directory]": sdk().directory })
+      const runID = params.id?.startsWith("ses_orch_") ? params.id.slice("ses_orch_".length) : undefined
+      const policy = input.orchestration?.policy
+      if (!runID && !policy) {
+        showToast({ title: "Choose a policy", description: "Wait for the orchestration policies to load or select one." })
+        return
+      }
+      const requestContext = context.length > 0
+        ? JSON.stringify(context.map((item) => ({ path: item.path, selection: item.selection, comment: item.comment })))
+        : undefined
+      try {
+        const response = await serverSDK().request(
+          `${runID ? `/api/orchestration/${encodeURIComponent(runID)}/follow-up` : "/api/orchestration/submit"}?${query}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(runID
+              ? { objective: text.trim(), context: requestContext }
+              : { objective: text.trim(), context: requestContext, policy, judge: input.orchestration?.judge,
+                minConfidence: input.orchestration?.minConfidence }),
+          },
+        )
+        if (!response.ok) throw new Error(await response.text())
+        const result = await Schema.decodeUnknownPromise(Location.response(Orchestration.Detail))(await response.json())
+        const sessionID = result.data.run.sessionID
+        if (!sessionID) throw new Error("The run was created without a root session")
+        if (!runID) {
+          const session = normalizeSessionInfo(await sdk().api.session.get({ sessionID }))
+          seed(sdk().directory, session)
+          await startTransition(() => {
+            local.session.promote(sdk().directory, sessionID, { agent: "orchestrate" })
+            layout.handoff.setTabs(base64Encode(sdk().directory), sessionID)
+            const draftID = search.draftId
+            if (draftID) tabs.promoteDraft(draftID, { server: tabs.draft(draftID).server, sessionId: sessionID })
+            else navigate(`/${base64Encode(sdk().directory)}/session/${sessionID}`)
+            submission.retarget(prompt.capture({ dir: base64Encode(sdk().directory), id: sessionID }))
+          })
+        }
+        input.addToHistory(currentPrompt, mode)
+        input.resetHistoryNavigation()
+        submission.clear()
+        input.setPopover(null)
+        input.onSubmit?.()
+      } catch (err) {
+        showToast({ title: "Run submission failed", description: errorMessage(err) })
+      }
+      return
+    }
     if (!currentModel || !currentAgent) {
       showToast({
         title: language.t("prompt.toast.modelAgentRequired.title"),

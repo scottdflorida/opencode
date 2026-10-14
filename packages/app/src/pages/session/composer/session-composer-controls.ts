@@ -1,7 +1,10 @@
 import { base64Encode } from "@opencode-ai/core/util/encode"
 import { createQuery } from "@tanstack/solid-query"
 import { useNavigate, useSearchParams } from "@solidjs/router"
-import { type Accessor, createMemo } from "solid-js"
+import { type Accessor, createMemo, createSignal } from "solid-js"
+import { Schema } from "effect"
+import { Orchestration } from "@opencode-ai/schema/orchestration"
+import { Location } from "@opencode-ai/schema/location"
 import type { PromptInputControls } from "@/components/prompt-input/contracts"
 import type { PromptProjectControls } from "@/components/prompt-project-selector"
 import { useDirectoryPicker } from "@/components/directory-picker"
@@ -29,12 +32,41 @@ export function createPromptInputController(input: {
   const sync = useSync()
   const providers = useProviders(() => sdk().directory)
   const view = layout.view(input.sessionKey)
+  const serverSDK = useServerSDK()
+  const [selectedPolicy, setSelectedPolicy] = createSignal<string>()
+  const [minConfidence, selectMinConfidence] = createSignal<number>()
+  const selectPolicy = (name: string) => {
+    setSelectedPolicy(name)
+    selectMinConfidence(undefined)
+  }
+  const [selectedJudge, selectJudge] = createSignal<"policy" | "jev" | "llm" | "experiment">("policy")
+  const policiesQuery = createQuery(() => ({
+    queryKey: ["orchestration", "policies", serverSDK().scope, sdk().directory] as const,
+    enabled: local.agent.current()?.name === "orchestrate",
+    queryFn: async () => {
+      const query = new URLSearchParams({ "location[directory]": sdk().directory })
+      const response = await serverSDK().request(`/api/orchestration/policy?${query}`)
+      if (!response.ok) throw new Error(`Policies unavailable (${response.status})`)
+      return Schema.decodeUnknownPromise(Location.response(Orchestration.PolicyCatalog))(await response.json())
+    },
+  }))
   const agentsQuery = createQuery(() => input.queryOptions.agents(pathKey(sdk().directory)))
   const globalProvidersQuery = createQuery(() => input.queryOptions.providers(null))
   const providersQuery = createQuery(() => input.queryOptions.providers(pathKey(sdk().directory)))
 
   return createMemo<PromptInputControls>(() => {
     return {
+      orchestration: {
+        policies: [...(policiesQuery.data?.data.policies ?? [])],
+        defaultPolicy: policiesQuery.data?.data.defaultPolicy ?? policiesQuery.data?.data.policies[0]?.name,
+        policy: selectedPolicy() ?? policiesQuery.data?.data.defaultPolicy ?? policiesQuery.data?.data.policies[0]?.name,
+        selectPolicy,
+        minConfidence: minConfidence(),
+        selectMinConfidence,
+        judge: selectedJudge(),
+        selectJudge,
+        loading: policiesQuery.isLoading,
+      },
       agents: {
         available: sync().data.agent,
         options: local.agent.list().map((agent) => agent.name),

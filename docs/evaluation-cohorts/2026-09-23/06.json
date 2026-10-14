@@ -1,0 +1,248 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a5910018oT4asfEe9vDcP",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Decode case-insensitive data URL base64 markers",
+    "description": "In packages/opencode/src/util/data-url.ts, decodeDataUrl should recognize the base64 marker regardless of ASCII letter case, per media type token conventions. Preserve normal percent-decoded data URL handling and add focused coverage.",
+    "routeProfile": "cohort",
+    "capabilityTier": "routine",
+    "checks": [
+      {
+        "name": "base64-marker",
+        "command": "bun -e 'import { decodeDataUrl } from \"./packages/opencode/src/util/data-url.ts\"; if (decodeDataUrl(\"data:text/plain;BASE64,SGVsbG8=\") !== \"Hello\" || decodeDataUrl(\"data:text/plain,Hello%20world\") !== \"Hello world\") process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463825,
+      "updated": 1790159548144
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd26bb00018udfL54h4RhR2n",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5910018oT4asfEe9vDcP",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-routine",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bb00018udfL54h4RhR2n"
+    },
+    "time": {
+      "created": 1790159514544,
+      "updated": 1790159548144,
+      "completed": 1790159548144
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd26bb2001RIaGtfhkvxFGrM",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5910018oT4asfEe9vDcP",
+    "attemptID": "attempt_0cdd26bb00018udfL54h4RhR2n",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159463859,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159514544,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159463859,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159505775,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6886047744,
+          "cpuCount": 18,
+          "load1": 4.3837890625,
+          "load5": 4.166015625,
+          "load15": 3.828125
+        }
+      },
+      "requestedTier": "routine",
+      "selected": {
+        "id": "codex-luna-routine",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [],
+      "capacityCapturedAt": 1790159463859
+    },
+    "time": 1790159514546
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd2eeee002G6TWWIfrtsxEKV",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5910018oT4asfEe9vDcP",
+      "attemptID": "attempt_0cdd26bb00018udfL54h4RhR2n",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd2-6f13-7be0-8660-a80496915ffb",
+        "exitCode": 0,
+        "latencyMs": 32595,
+        "inputTokens": 130363,
+        "cachedInputTokens": 116992,
+        "outputTokens": 1262,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159548142
+    },
+    {
+      "id": "eval_0cdd2eeef001scXjjAlx3Zk73b",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5910018oT4asfEe9vDcP",
+      "attemptID": "attempt_0cdd26bb00018udfL54h4RhR2n",
+      "kind": "check:base64-marker",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { decodeDataUrl } from \"./packages/opencode/src/util/data-url.ts\"; if (decodeDataUrl(\"data:text/plain;BASE64,SGVsbG8=\") !== \"Hello\" || decodeDataUrl(\"data:text/plain,Hello%20world\") !== \"Hello world\") process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159548143
+    },
+    {
+      "id": "eval_0cdd2eeef003ilrqD6XSkfdRRR",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5910018oT4asfEe9vDcP",
+      "attemptID": "attempt_0cdd26bb00018udfL54h4RhR2n",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bb00018udfL54h4RhR2n",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bb00018udfL54h4RhR2n",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 2,
+            "untracked": 0
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/opencode/src/util/data-url.ts b/packages/opencode/src/util/data-url.ts\nindex 0fafcbc63..c9a360fb5 100644\n--- a/packages/opencode/src/util/data-url.ts\n+++ b/packages/opencode/src/util/data-url.ts\n@@ -4,6 +4,6 @@ export function decodeDataUrl(url: string) {\n \n   const head = url.slice(0, idx)\n   const body = url.slice(idx + 1)\n-  if (head.includes(\";base64\")) return Buffer.from(body, \"base64\").toString(\"utf8\")\n+  if (/;base64/i.test(head)) return Buffer.from(body, \"base64\").toString(\"utf8\")\n   return decodeURIComponent(body)\n }\ndiff --git a/packages/opencode/test/util/data-url.test.ts b/packages/opencode/test/util/data-url.test.ts\nindex b8148285c..b7385ba14 100644\n--- a/packages/opencode/test/util/data-url.test.ts\n+++ b/packages/opencode/test/util/data-url.test.ts\n@@ -8,6 +8,12 @@ describe(\"decodeDataUrl\", () => {\n     expect(decodeDataUrl(url)).toBe(body)\n   })\n \n+  test(\"decodes base64 data URLs when the marker uses mixed case\", () => {\n+    const body = \"hello world\"\n+    const url = `data:text/plain;BASE64,${Buffer.from(body).toString(\"base64\")}`\n+    expect(decodeDataUrl(url)).toBe(body)\n+  })\n+\n   test(\"decodes plain data URLs\", () => {\n     expect(decodeDataUrl(\"data:text/plain,hello%20world\")).toBe(\"hello world\")\n   })\n",
+        "truncated": false
+      },
+      "time": 1790159548143
+    }
+  ]
+}

@@ -1,8 +1,13 @@
 import type { Session } from "@opencode-ai/sdk/v2/client"
+import { base64Encode } from "@opencode-ai/core/util/encode"
+import { useNavigate } from "@solidjs/router"
 import { preloadMarkdown } from "@opencode-ai/session-ui/markdown-cache"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useQuery } from "@tanstack/solid-query"
 import { DateTime } from "luxon"
+import { Schema } from "effect"
+import { Location } from "@opencode-ai/schema/location"
+import { Orchestration } from "@opencode-ai/schema/orchestration"
 import { type Accessor, createEffect, createMemo, createRoot, type JSX, startTransition } from "solid-js"
 import { produce } from "solid-js/store"
 import { useCommand } from "@/context/command"
@@ -13,12 +18,14 @@ import {
 } from "@/context/global-sync/home-session-index"
 import type { LocalProject } from "@/context/layout"
 import { useLanguage } from "@/context/language"
+import { useServerSDK } from "@/context/server-sdk"
 import { ServerConnection } from "@/context/server"
 import { sessionHasOpenTab, useTabs } from "@/context/tabs"
 import { compareSessionTime, displayName, errorMessage, projectForSession } from "@/pages/layout/helpers"
 import { useSessionTabAvatarState } from "@/pages/layout/project-avatar-state"
 import { pathKey } from "@/utils/path-key"
 import { showToast } from "@/utils/toast"
+import { sessionPermissionRequest, sessionQuestionRequest } from "@/pages/session/composer/session-request-tree"
 import { Binary } from "@opencode-ai/core/util/binary"
 import { archiveHomeSession } from "../home-session-archive"
 import type { HomeController } from "./home-controller"
@@ -28,10 +35,13 @@ export type HomeSessionRecord = {
   session: Session
   project: LocalProject
   projectName: string
+  attention?: string
+  labelAttention?: boolean
+  runSummary?: Orchestration.RunSummary
 }
 
 export type HomeSessionGroup = {
-  id: "today" | "yesterday" | "older"
+  id: "needs_you" | "today" | "yesterday" | "older"
   title: string
   sessions: HomeSessionRecord[]
 }
@@ -43,6 +53,8 @@ export function createHomeSessionsController(home: HomeController) {
   const command = useCommand()
   const dialog = useDialog()
   const language = useLanguage()
+  const navigate = useNavigate()
+  const serverSDK = useServerSDK()
   const projectDirectories = createMemo(() => {
     const project = home.project.selected()
     if (!project) return home.project.list().flatMap(directories)
@@ -86,7 +98,7 @@ export function createHomeSessionsController(home: HomeController) {
       Date.now(),
     ),
   )
-  const allRecords = createMemo(() =>
+  const baseRecords = createMemo(() =>
     buildHomeSessionRecords({
       sessions: indexedSessions,
       projectDirectories,
@@ -94,8 +106,47 @@ export function createHomeSessionsController(home: HomeController) {
       projectByID,
     }),
   )
+  const runDirectories = createMemo(() => [...new Set(baseRecords()
+    .filter((record) => record.session.id.startsWith("ses_orch_"))
+    .map((record) => record.session.directory))].sort())
+  const summaryLoad = useQuery(() => ({
+    queryKey: ["home-run-summaries", serverSDK().url, runDirectories().join("\0")],
+    enabled: runDirectories().length > 0,
+    queryFn: async (): Promise<Orchestration.RunSummary[]> => {
+      const results = await Promise.allSettled(runDirectories().map(async (directory) => {
+        const query = new URLSearchParams({ "location[directory]": directory })
+        const response = await serverSDK().request(`/api/orchestration/summaries?${query}`)
+        if (!response.ok) return []
+        return (await Schema.decodeUnknownPromise(Location.response(Schema.Array(Orchestration.RunSummary)))(await response.json())).data
+      }))
+      return results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    },
+    retry: false,
+    staleTime: 15_000,
+    refetchInterval: 15_000,
+  }))
+  const allRecords = createMemo(() => {
+    const summaries = new Map<string, Orchestration.RunSummary>(summaryLoad.data?.map((item) => [item.runID, item]))
+    return baseRecords().map((record) => ({
+      ...record,
+      runSummary: summaries.get(record.session.id.slice("ses_orch_".length)),
+    }))
+  })
   const records = createMemo(() => allRecords().slice(0, HOME_SESSION_LIMIT))
-  const groups = createMemo(() => groupSessions(records(), language))
+  const groups = createMemo(() => {
+    const state = home.server.focusedSync().session.data
+    const sessions = [...indexedSessions(), ...Object.values(state.info).filter((item): item is Session => !!item)]
+    return groupSessions(records().map((record) => {
+      const question = sessionQuestionRequest(sessions, state.question, record.session.id)
+      const permission = sessionPermissionRequest(sessions, state.permission, record.session.id)
+      const humanAttention = record.runSummary?.attention ?? question?.questions[0]?.question ?? (permission ? `Permission: ${permission.permission}` : undefined)
+      return {
+        ...record,
+        attention: humanAttention ?? (record.runSummary?.pendingLabels ? `${record.runSummary.pendingLabels} blind review ${record.runSummary.pendingLabels === 1 ? "packet" : "packets"} in Lab` : undefined),
+        labelAttention: !humanAttention && !!record.runSummary?.pendingLabels,
+      }
+    }), language)
+  })
   const prefetched = new Set<string>()
 
   createEffect(() => {
@@ -174,6 +225,7 @@ export function createHomeSessionsController(home: HomeController) {
       searchRecords: allRecords,
     },
     session: {
+      openLab: (directory: string) => navigate(`/lab/${base64Encode(directory)}`),
       showProjectName: () => !home.project.selected(),
       server: () => home.selection.value().server,
       canCreate: () => !!home.project.newSession(),
@@ -278,13 +330,15 @@ export function homeSessionSearchKey(record: HomeSessionRecord) {
 function groupSessions(records: HomeSessionRecord[], language: ReturnType<typeof useLanguage>): HomeSessionGroup[] {
   const now = DateTime.local()
   const yesterday = now.minus({ days: 1 })
-  const todaySessions = records.filter((record) =>
+  const needsYou = records.filter((record) => record.attention)
+  const ordinary = records.filter((record) => !record.attention)
+  const todaySessions = ordinary.filter((record) =>
     DateTime.fromMillis(record.session.time.updated ?? record.session.time.created).hasSame(now, "day"),
   )
-  const yesterdaySessions = records.filter((record) =>
+  const yesterdaySessions = ordinary.filter((record) =>
     DateTime.fromMillis(record.session.time.updated ?? record.session.time.created).hasSame(yesterday, "day"),
   )
-  const olderSessions = records.filter((record) => {
+  const olderSessions = ordinary.filter((record) => {
     const time = DateTime.fromMillis(record.session.time.updated ?? record.session.time.created)
     return !time.hasSame(now, "day") && !time.hasSame(yesterday, "day")
   })
@@ -293,6 +347,7 @@ function groupSessions(records: HomeSessionRecord[], language: ReturnType<typeof
       ? language.t("sidebar.project.recentSessions")
       : language.t("home.sessions.group.older")
   return [
+    { id: "needs_you" as const, title: "Needs you", sessions: needsYou },
     { id: "today" as const, title: language.t("home.sessions.group.today"), sessions: todaySessions },
     { id: "yesterday" as const, title: language.t("home.sessions.group.yesterday"), sessions: yesterdaySessions },
     { id: "older" as const, title: olderTitle, sessions: olderSessions },

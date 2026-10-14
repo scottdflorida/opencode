@@ -229,7 +229,7 @@ export const loadProvidersQuery = (
     queryKey: [scope, directory, "providers"],
     queryFn: () =>
       retry(async () => {
-        if ((await protocol) === "v1" && legacy) {
+        if (legacy) {
           const result = await legacy.provider.list()
           return normalizeProviderList(result.data!)
         }

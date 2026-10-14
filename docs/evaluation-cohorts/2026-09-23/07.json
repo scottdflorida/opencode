@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a598001W5p42Tc0DYKcGy",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Normalize attachment media types",
+    "description": "In packages/opencode/src/util/media.ts, recognize PDF and image media types regardless of case and optional MIME parameters such as charset. Keep SVG excluded from image attachments. Add focused coverage.",
+    "routeProfile": "cohort",
+    "capabilityTier": "complex",
+    "checks": [
+      {
+        "name": "mime-normalization",
+        "command": "bun -e 'import { isPdfAttachment, isImageAttachment } from \"./packages/opencode/src/util/media.ts\"; if (!isPdfAttachment(\"Application/PDF; charset=binary\") || !isImageAttachment(\"IMAGE/PNG\") || isImageAttachment(\"IMAGE/SVG+XML; charset=utf-8\")) process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463832,
+      "updated": 1790159585391
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd2eef40013rryqnADVXarni",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a598001W5p42Tc0DYKcGy",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-complex",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef40013rryqnADVXarni"
+    },
+    "time": {
+      "created": 1790159548148,
+      "updated": 1790159585390,
+      "completed": 1790159585390
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd2eef6001WMCf5JShFXLaT3",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a598001W5p42Tc0DYKcGy",
+    "attemptID": "attempt_0cdd2eef40013rryqnADVXarni",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159523874,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159548148,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159523874,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159535784,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6502203392,
+          "cpuCount": 18,
+          "load1": 4.0986328125,
+          "load5": 4.12939453125,
+          "load15": 3.826171875
+        }
+      },
+      "requestedTier": "complex",
+      "selected": {
+        "id": "codex-luna-complex",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [
+        {
+          "candidateID": "codex-luna-routine",
+          "code": "tier_mismatch",
+          "message": "Candidate does not serve complex"
+        }
+      ],
+      "capacityCapturedAt": 1790159523874
+    },
+    "time": 1790159548150
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd3806c0023f4LgvU11tQ0ZY",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a598001W5p42Tc0DYKcGy",
+      "attemptID": "attempt_0cdd2eef40013rryqnADVXarni",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd2-f23b-7f51-9428-b9e0809233f0",
+        "exitCode": 0,
+        "latencyMs": 36265,
+        "inputTokens": 146581,
+        "cachedInputTokens": 133120,
+        "outputTokens": 1375,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159585388
+    },
+    {
+      "id": "eval_0cdd3806d001xZGw0SzZguMNhU",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a598001W5p42Tc0DYKcGy",
+      "attemptID": "attempt_0cdd2eef40013rryqnADVXarni",
+      "kind": "check:mime-normalization",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { isPdfAttachment, isImageAttachment } from \"./packages/opencode/src/util/media.ts\"; if (!isPdfAttachment(\"Application/PDF; charset=binary\") || !isImageAttachment(\"IMAGE/PNG\") || isImageAttachment(\"IMAGE/SVG+XML; charset=utf-8\")) process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159585389
+    },
+    {
+      "id": "eval_0cdd3806e001z1CGeYStXOLqt9",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a598001W5p42Tc0DYKcGy",
+      "attemptID": "attempt_0cdd2eef40013rryqnADVXarni",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef40013rryqnADVXarni",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef40013rryqnADVXarni",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 1
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/opencode/src/util/media.ts b/packages/opencode/src/util/media.ts\nindex 566ac843a..d762c6cb1 100644\n--- a/packages/opencode/src/util/media.ts\n+++ b/packages/opencode/src/util/media.ts\n@@ -1,15 +1,17 @@\n const startsWith = (bytes: Uint8Array, prefix: number[]) => prefix.every((value, index) => bytes[index] === value)\n+const normalizeMime = (mime: string) => mime.split(\";\", 1)[0].trim().toLowerCase()\n \n export function isPdfAttachment(mime: string) {\n-  return mime === \"application/pdf\"\n+  return normalizeMime(mime) === \"application/pdf\"\n }\n \n export function isMedia(mime: string) {\n-  return mime.startsWith(\"image/\") || isPdfAttachment(mime)\n+  return normalizeMime(mime).startsWith(\"image/\") || isPdfAttachment(mime)\n }\n \n export function isImageAttachment(mime: string) {\n-  return mime.startsWith(\"image/\") && mime !== \"image/svg+xml\" && mime !== \"image/vnd.fastbidsheet\"\n+  const normalized = normalizeMime(mime)\n+  return normalized.startsWith(\"image/\") && normalized !== \"image/svg+xml\" && normalized !== \"image/vnd.fastbidsheet\"\n }\n \n export function sniffAttachmentMime(bytes: Uint8Array, fallback: string) {\n\ndiff --git a/packages/opencode/test/util/media.test.ts b/packages/opencode/test/util/media.test.ts\nnew file mode 100644\nindex 000000000..6307afa62\n--- /dev/null\n+++ b/packages/opencode/test/util/media.test.ts\n@@ -0,0 +1,21 @@\n+import { describe, expect, test } from \"bun:test\"\n+import { isImageAttachment, isMedia, isPdfAttachment } from \"../../src/util/media\"\n+\n+describe(\"media type normalization\", () => {\n+  test(\"recognizes PDF media types regardless of case and parameters\", () => {\n+    expect(isPdfAttachment(\"Application/PDF\")).toBe(true)\n+    expect(isPdfAttachment(\"APPLICATION/PDF; charset=binary\")).toBe(true)\n+    expect(isMedia(\"application/pdf; charset=binary\")).toBe(true)\n+  })\n+\n+  test(\"recognizes image media types regardless of case and parameters\", () => {\n+    expect(isMedia(\"IMAGE/PNG; charset=binary\")).toBe(true)\n+    expect(isImageAttachment(\"Image/JPEG; charset=utf-8\")).toBe(true)\n+  })\n+\n+  test(\"keeps excluded image types out of image attachments after normalization\", () => {\n+    expect(isMedia(\"IMAGE/SVG+XML; charset=utf-8\")).toBe(true)\n+    expect(isImageAttachment(\"IMAGE/SVG+XML; charset=utf-8\")).toBe(false)\n+    expect(isImageAttachment(\"IMAGE/VND.FASTBIDSHEET; charset=utf-8\")).toBe(false)\n+  })\n+})\n",
+        "truncated": false
+      },
+      "time": 1790159585390
+    }
+  ]
+}

@@ -18,6 +18,7 @@ export const Event = SessionEvent
 export interface Info extends Schema.Schema.Type<typeof Info> {}
 export const Info = Schema.Struct({
   id: ID,
+  kind: Schema.Literals(["orchestration", "attempt_mirror"]).pipe(optional),
   parentID: ID.pipe(optional),
   projectID: Project.ID,
   agent: Agent.ID.pipe(optional),

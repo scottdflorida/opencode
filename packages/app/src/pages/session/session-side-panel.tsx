@@ -56,6 +56,8 @@ import {
 import { setSessionHandoff } from "@/pages/session/handoff"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { SessionFileBrowserTab, type SessionFileBrowserState } from "@/pages/session/v2/session-file-browser-tab"
+import { SessionRunPanel } from "@/pages/session/session-run-panel"
+import { SessionRunUsage } from "@/pages/session/session-run-usage"
 
 type ReviewDiff = FileDiffInfo | SnapshotFileDiff | VcsFileDiff
 type RenderDiff = FileDiffInfo | (SnapshotFileDiff & { file: string }) | VcsFileDiff
@@ -90,6 +92,7 @@ export function SessionSidePanel(props: {
   const dialog = useDialog()
   const sdk = useSDK()
   const { sessionKey, tabs, view, params } = useSessionLayout()
+  const run = () => params.id?.startsWith("ses_orch_") === true
   const projectDirectory = createMemo(() => sdk().directory)
 
   const isDesktop = createMediaQuery("(min-width: 768px)")
@@ -180,6 +183,7 @@ export function SessionSidePanel(props: {
     review: reviewTab,
     hasReview: props.canReview,
     fileBrowser: () => !!props.fileBrowserState,
+    run,
   })
   const contextOpen = tabState.contextOpen
   const openFileOpen = tabState.openFileOpen
@@ -187,6 +191,12 @@ export function SessionSidePanel(props: {
   const openedTabs = tabState.openedTabs
   const activeTab = tabState.activeTab
   const activeFileTab = tabState.activeFileTab
+
+  createEffect(() => {
+    if (!run() || tabs().all().includes("run")) return
+    tabs().open("run")
+    tabs().setActive("run")
+  })
 
   const fileTreeTab = () => layout.fileTree.tab()
 
@@ -349,6 +359,7 @@ export function SessionSidePanel(props: {
                                 onCleanup(stop)
                               }}
                             >
+                              <Show when={run()}><Tabs.Trigger value="run">Run</Tabs.Trigger></Show>
                               <Show when={reviewTab() && props.canReview()}>
                                 <Tabs.Trigger
                                   value="review"
@@ -366,7 +377,7 @@ export function SessionSidePanel(props: {
                               <Show when={contextOpen()}>
                                 <Tabs.Trigger
                                   value="context"
-                                  closeButton={
+                                  closeButton={run() ? undefined :
                                     <TooltipKeybind
                                       title={language.t("common.closeTab")}
                                       keybind={command.keybind("tab.close")}
@@ -383,11 +394,11 @@ export function SessionSidePanel(props: {
                                     </TooltipKeybind>
                                   }
                                   hideCloseButton
-                                  onMiddleClick={() => tabs().close("context")}
+                                  onMiddleClick={() => { if (!run()) tabs().close("context") }}
                                 >
                                   <div class="flex items-center gap-2">
                                     <SessionContextUsage variant="indicator" />
-                                    <div>{language.t("session.tab.context")}</div>
+                                    <div>{run() ? "Usage" : language.t("session.tab.context")}</div>
                                   </div>
                                 </Tabs.Trigger>
                               </Show>
@@ -464,6 +475,12 @@ export function SessionSidePanel(props: {
                             </Tabs.List>
                           </div>
 
+                          <Show when={run() && activeTab() === "run"}>
+                            <Tabs.Content value="run" class="flex flex-col h-full min-h-0 overflow-hidden">
+                              <SessionRunPanel sessionID={() => params.id} />
+                            </Tabs.Content>
+                          </Show>
+
                           <Show when={reviewTab() && props.canReview() && activeTab() === "review"}>
                             <div
                               id={reviewTabPanelID}
@@ -493,7 +510,7 @@ export function SessionSidePanel(props: {
                           <Show when={activeTab() === "context"}>
                             <Tabs.Content value="context" class="flex flex-col h-full overflow-hidden contain-strict">
                               <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
-                                <SessionContextTab />
+                                <Show when={run()} fallback={<SessionContextTab />}><SessionRunUsage sessionID={() => params.id} /></Show>
                               </div>
                             </Tabs.Content>
                           </Show>
@@ -553,6 +570,7 @@ export function SessionSidePanel(props: {
                               onCleanup(stop)
                             }}
                           >
+                            <Show when={run()}><Tabs.Trigger value="run">Run</Tabs.Trigger></Show>
                             <Show when={props.reviewSidebarToggle}>
                               {(toggle) => (
                                 <div class="session-review-v2-sidebar-toggle-slot h-full shrink-0 sticky left-0 z-10 flex items-center justify-center bg-v2-background-bg-base">
@@ -574,7 +592,7 @@ export function SessionSidePanel(props: {
                             <Show when={contextOpen()}>
                               <Tabs.Trigger
                                 value="context"
-                                closeButton={
+                                closeButton={run() ? undefined :
                                   <TooltipV2
                                     value={
                                       <>
@@ -597,11 +615,11 @@ export function SessionSidePanel(props: {
                                   </TooltipV2>
                                 }
                                 hideCloseButton
-                                onMiddleClick={() => tabs().close("context")}
+                                onMiddleClick={() => { if (!run()) tabs().close("context") }}
                               >
                                 <div class="flex items-center gap-2">
                                   <SessionContextUsage variant="indicator" />
-                                  <div>{language.t("session.tab.context")}</div>
+                                  <div>{run() ? "Usage" : language.t("session.tab.context")}</div>
                                 </div>
                               </Tabs.Trigger>
                             </Show>
@@ -692,6 +710,12 @@ export function SessionSidePanel(props: {
                           </div>
                         </div>
 
+                        <Show when={run() && activeTab() === "run"}>
+                          <Tabs.Content value="run" class="flex flex-col h-full min-h-0 overflow-hidden">
+                            <SessionRunPanel sessionID={() => params.id} />
+                          </Tabs.Content>
+                        </Show>
+
                         <Show when={reviewTab() && props.canReview() && activeTab() === "review"}>
                           <div
                             id={reviewTabPanelID}
@@ -721,7 +745,7 @@ export function SessionSidePanel(props: {
                         <Show when={activeTab() === "context"}>
                           <Tabs.Content value="context" class="flex flex-col h-full overflow-hidden contain-strict">
                             <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
-                              <SessionContextTab />
+                              <Show when={run()} fallback={<SessionContextTab />}><SessionRunUsage sessionID={() => params.id} /></Show>
                             </div>
                           </Tabs.Content>
                         </Show>

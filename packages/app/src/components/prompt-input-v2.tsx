@@ -7,6 +7,7 @@ import { KeybindV2 } from "@opencode-ai/ui/v2/keybind-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import type { ReferenceInfo } from "@opencode-ai/sdk/v2/client"
 import { createEffect, createMemo, on, Show } from "solid-js"
+import { useParams } from "@solidjs/router"
 import { ModelSelectorPopoverV2 } from "@/components/dialog-select-model"
 import { DialogSelectModelUnpaidV2 } from "@/components/dialog-select-model-unpaid-v2"
 import type { PromptInputProps } from "@/components/prompt-input/contracts"
@@ -26,7 +27,7 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { showToast } from "@/utils/toast"
-import { PromptInputV2, type PromptInputV2Suggestion } from "@opencode-ai/session-ui/v2/prompt-input"
+import { PromptInputV2, PromptInputV2Select, type PromptInputV2Suggestion } from "@opencode-ai/session-ui/v2/prompt-input"
 import {
   createPromptInputV2Controller,
   createPromptInputV2State,
@@ -42,12 +43,21 @@ export type PromptInputV2ComposerProps = {
 export type PromptInputV2ControllerProps = Omit<PromptInputProps, "class" | "submission">
 export type PromptInputV2ComposerController = PromptInputV2Interaction & {
   readonly model: PromptInputProps["controls"]["model"]
+  readonly orchestration: PromptInputProps["controls"]["orchestration"]
 }
 
 export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
   const dialog = useDialog()
   const command = useCommand()
+  const params = useParams()
   const language = useLanguage()
+  const orchestrating = () => props.controller.view.agent?.current() === "orchestrate"
+  const selectedPolicy = () => props.controller.orchestration.policies.find((policy) => policy.name === props.controller.orchestration.policy)
+  const policyOptions = () => props.controller.orchestration.policies.map((policy) => ({
+    id: policy.name,
+    label: policy.name,
+    description: `${policy.roles.executor} · ${policy.roles.judge.provider} · ${Math.round(policy.acceptance.minConfidence * 100)}% · ${policy.budgets.maxRevisionsPerRoute} revisions`,
+  }))
 
   return (
     <div class="flex flex-col gap-3">
@@ -55,10 +65,18 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
         controller={props.controller}
         borderUnderlay={props.borderUnderlay}
         class={props.class}
-        variantControlVisible={!props.controller.model.loading}
+        variantControlVisible={orchestrating() || !props.controller.model.loading}
+        variantTitle={orchestrating() ? language.t("prompt.orchestration.judge") : undefined}
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
-        modelControl={
+        modelControl={orchestrating() ? (
+          <PromptInputV2Select
+            title={language.t("prompt.orchestration.policy")}
+            options={policyOptions()}
+            current={props.controller.orchestration.policy ?? ""}
+            onSelect={props.controller.orchestration.selectPolicy}
+          />
+        ) : (
           <PromptInputV2ModelControl
             loading={props.controller.model.loading}
             paid={props.controller.model.paid}
@@ -72,8 +90,23 @@ export function PromptInputV2Composer(props: PromptInputV2ComposerProps) {
               dialog.show(() => <DialogSelectModelUnpaidV2 model={props.controller.model.selection} />)
             }
           />
-        }
+        )}
       />
+      <Show when={orchestrating() && !params.id?.startsWith("ses_orch_") && selectedPolicy()}>
+        <label class="flex items-center gap-2 px-2 text-12-regular text-v2-text-text-muted">
+          Minimum confidence
+          <input type="number" min="0" max="100" step="1" class="w-16 rounded-md border border-v2-border-border-base bg-v2-background-bg-base px-2 py-1 text-v2-text-text-base"
+            value={Math.round((props.controller.orchestration.minConfidence ?? selectedPolicy()?.acceptance.minConfidence ?? 0.8) * 100)}
+            onInput={(event) => {
+              const value = Number(event.currentTarget.value)
+              if (Number.isFinite(value)) props.controller.orchestration.selectMinConfidence(Math.max(0, Math.min(100, value)) / 100)
+            }} />
+          %
+          <Show when={props.controller.orchestration.minConfidence !== undefined}>
+            <button type="button" class="underline" onClick={() => props.controller.orchestration.selectMinConfidence(undefined)}>Use policy default</button>
+          </Show>
+        </label>
+      </Show>
     </div>
   )
 }
@@ -219,6 +252,9 @@ export function usePromptInputV2Controller(props: PromptInputV2ControllerProps):
     onAbort: props.onAbort,
     onSubmit: props.onSubmit,
     model: props.controls.model.selection,
+    get orchestration() {
+      return props.controls.orchestration
+    },
   })
 
   const referenceDescription = (reference: ReferenceInfo) =>
@@ -395,9 +431,28 @@ export function usePromptInputV2Controller(props: PromptInputV2ControllerProps):
           : undefined
       },
       variant: {
-        options: () => variants().map((value) => ({ id: value, label: value })),
-        current: () => props.controls.model.selection.variant.current() ?? "default",
-        onSelect: (value) => props.controls.model.selection.variant.set(value === "default" ? undefined : value),
+        options: () => props.controls.agents.current === "orchestrate"
+          ? [
+              { id: "policy", label: language.t("prompt.orchestration.judgeDefault") },
+              { id: "jev", label: "Jev" },
+              ...(props.controls.orchestration.policies.find((policy) => policy.name === props.controls.orchestration.policy)?.roles.judge.routeProfile
+                ? [{ id: "llm", label: language.t("prompt.orchestration.judgeLlm") }]
+                : []),
+              ...(props.controls.orchestration.policies.find((policy) => policy.name === props.controls.orchestration.policy)?.roles.judge.experiment
+                ? [{ id: "experiment", label: language.t("prompt.orchestration.judgeExperiment") }]
+                : []),
+            ]
+          : variants().map((value) => ({ id: value, label: value })),
+        current: () => props.controls.agents.current === "orchestrate"
+          ? props.controls.orchestration.judge
+          : props.controls.model.selection.variant.current() ?? "default",
+        onSelect: (value) => {
+          if (props.controls.agents.current === "orchestrate") {
+            if (value === "policy" || value === "jev" || value === "llm" || value === "experiment") props.controls.orchestration.selectJudge(value)
+            return
+          }
+          props.controls.model.selection.variant.set(value === "default" ? undefined : value)
+        },
         keybind: () => command.keybindParts("model.variant.cycle"),
       },
       submit: {
@@ -465,7 +520,15 @@ export function usePromptInputV2Controller(props: PromptInputV2ControllerProps):
     ),
   )
 
-  return controller as PromptInputV2ComposerController
+  return {
+    ...controller,
+    get model() {
+      return props.controls.model
+    },
+    get orchestration() {
+      return props.controls.orchestration
+    },
+  }
 }
 
 function PromptInputV2ModelControl(props: {

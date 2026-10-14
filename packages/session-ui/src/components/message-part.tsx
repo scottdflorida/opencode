@@ -2640,3 +2640,113 @@ ToolRegistry.register({
     return <BasicTool icon="brain" status={props.status} trigger={trigger()} hideDetails />
   },
 })
+
+ToolRegistry.register({
+  name: "orchestration",
+  render(props) {
+    const data = useData()
+    const i18n = useI18n()
+    const kind = () => typeof props.input.kind === "string" ? props.input.kind : "task"
+    const label = () => {
+      const labels = {
+        clarification: "ui.orchestration.clarification",
+        plan: "ui.orchestration.plan",
+        task: "ui.orchestration.task",
+        replan: "ui.orchestration.replan",
+        human_request: "ui.orchestration.human_request",
+        delivery_review: "ui.orchestration.delivery_review",
+        integration: "ui.orchestration.integration",
+      } as const
+      return i18n.t(labels[kind() as keyof typeof labels] ?? labels.task)
+    }
+    const tasks = () => {
+      const output: unknown = props.metadata.output
+      if (!output || typeof output !== "object" || !("tasks" in output) || !Array.isArray(output.tasks)) return []
+      return output.tasks.filter((item): item is { key: string; title: string; dependsOn?: string[]; capabilityTier?: string; acceptanceCriteria?: Array<{ description: string }> } =>
+        !!item && typeof item === "object" && typeof item.key === "string" && typeof item.title === "string",
+      )
+    }
+    const priorTasks = () => Array.isArray(props.metadata.before)
+      ? props.metadata.before.filter((item: unknown): item is { key: string; title: string } =>
+          !!item && typeof item === "object" && "key" in item && typeof item.key === "string" && "title" in item && typeof item.title === "string")
+      : []
+    const cancelledTasks = () => Array.isArray(props.metadata.cancelled)
+      ? props.metadata.cancelled.filter((item: unknown): item is { id: string; title: string } =>
+          !!item && typeof item === "object" && "id" in item && typeof item.id === "string" && "title" in item && typeof item.title === "string")
+      : []
+    const afterTasks = () => Array.isArray(props.metadata.after)
+      ? props.metadata.after.filter((item: unknown): item is { key: string; title: string } =>
+          !!item && typeof item === "object" && "key" in item && typeof item.key === "string" && "title" in item && typeof item.title === "string")
+      : []
+    const choices = () => Array.isArray(props.metadata.choices)
+      ? props.metadata.choices.filter((choice: unknown): choice is string => typeof choice === "string")
+      : []
+    const clauses = () => {
+      const review: unknown = props.metadata.review
+      if (!review || typeof review !== "object" || !("clauses" in review) || !Array.isArray(review.clauses)) return []
+      return review.clauses.filter((item): item is { key: string; decision: string } =>
+        !!item && typeof item === "object" && typeof item.key === "string" && typeof item.decision === "string",
+      )
+    }
+    const attempts = () => Array.isArray(props.metadata.attempts)
+      ? props.metadata.attempts.filter((item: unknown): item is { id: string; status: string; candidate?: string; sessionID?: string; decision?: string; confidence?: number; feedback?: string } =>
+          !!item && typeof item === "object" && "id" in item && typeof item.id === "string" && "status" in item && typeof item.status === "string")
+      : []
+    const criteria = () => Array.isArray(props.metadata.acceptanceCriteria)
+      ? props.metadata.acceptanceCriteria.filter((item: unknown): item is { key: string; description: string } =>
+          !!item && typeof item === "object" && "key" in item && typeof item.key === "string" && "description" in item && typeof item.description === "string")
+      : []
+    return (
+      <BasicTool
+        icon={kind() === "task" ? "task" : kind() === "plan" || kind() === "replan" ? "bullet-list" : "checklist"}
+        status={props.status}
+        trigger={{
+          title: kind() === "task" && typeof props.input.title === "string" ? props.input.title : label(),
+          subtitle: kind() === "task" ? props.output : typeof props.input.title === "string" ? props.input.title : props.output,
+        }}
+        defaultOpen={props.defaultOpen}
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+      >
+        <Show when={props.output}><Markdown text={props.output!} /></Show>
+        <Show when={tasks().length}>
+          <div data-component="orchestration-plan-tasks">
+            <Show when={kind() === "replan" && priorTasks().length}>
+              <div class="text-text-weak">Before: {priorTasks().map((task) => task.title).join(" · ")}</div>
+              <div class="mt-2">Added tasks</div>
+            </Show>
+            <Show when={kind() === "replan" && cancelledTasks().length}>
+              <div class="text-text-weak">Cancelled: {cancelledTasks().map((task) => task.title).join(" · ")}</div>
+            </Show>
+            <For each={tasks()}>{(task) => <div class="py-1">
+              <div>{task.title}{task.capabilityTier ? ` · ${task.capabilityTier}` : ""}{task.dependsOn?.length ? ` · after ${task.dependsOn.join(", ")}` : ""}</div>
+              <For each={task.acceptanceCriteria ?? []}>{(criterion) => <div class="pl-3 text-text-weak">• {criterion.description}</div>}</For>
+            </div>}</For>
+            <Show when={kind() === "replan" && afterTasks().length}>
+              <div class="mt-2 text-text-weak">After: {afterTasks().map((task) => task.title).join(" · ")}</div>
+            </Show>
+          </div>
+        </Show>
+        <Show when={criteria().length}><div class="mt-2"><For each={criteria()}>{(criterion) => <div>• {criterion.description}</div>}</For></div></Show>
+        <Show when={attempts().length}><div class="mt-2 flex flex-col gap-1"><For each={attempts()}>{(attempt, index) =>
+          <div>Attempt {index() + 1} · {attempt.candidate ?? "unrouted"} · {attempt.decision ?? attempt.status}
+            {attempt.confidence !== undefined ? ` · ${Math.round(attempt.confidence * 100)}%` : ""}
+            <Show when={attempt.sessionID}>{(id) => <button type="button" class="ml-2 underline" onClick={() => data.navigateToSession?.(id())}>Open session</button>}</Show>
+            <Show when={attempt.feedback}><div class="pl-3 text-text-weak">{attempt.feedback}</div></Show>
+          </div>
+        }</For></div></Show>
+        <Show when={choices().length}>
+          <div data-component="orchestration-request-choices">
+            <For each={choices()}>{(choice) => <div>{choice}</div>}</For>
+          </div>
+        </Show>
+        <Show when={typeof props.metadata.answer === "string"}><div class="mt-2">Answer: {String(props.metadata.answer)}</div></Show>
+        <Show when={clauses().length}>
+          <div data-component="orchestration-delivery-clauses">
+            <For each={clauses()}>{(clause) => <div>{clause.key} · {clause.decision}</div>}</For>
+          </div>
+        </Show>
+      </BasicTool>
+    )
+  },
+})

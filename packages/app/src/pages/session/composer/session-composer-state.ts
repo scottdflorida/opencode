@@ -34,7 +34,8 @@ export function createSessionComposerController(options?: { closeMs?: number | (
   const permission = usePermission()
 
   const questionRequest = createMemo((): QuestionRequest | undefined => {
-    return sessionQuestionRequest(sync().data.session, sync().data.question, params.id)
+    return sessionQuestionRequest(sync().data.session, sync().data.question, params.id, (item) =>
+      !item.tool?.callID.startsWith("orch-human-"))
   })
 
   const permissionRequest = createMemo((): PermissionRequest | undefined => {

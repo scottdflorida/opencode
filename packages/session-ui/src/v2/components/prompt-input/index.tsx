@@ -42,6 +42,7 @@ export type PromptInputV2Props = {
   class?: string
   modelControl?: JSX.Element
   variantControlVisible?: boolean
+  variantTitle?: string
   attachKeybind?: string[]
   attachShortcut?: string
 }
@@ -246,7 +247,7 @@ export function PromptInputV2(props: PromptInputV2Props) {
               {(control) => (
                 <Show when={control.options().length > 1}>
                   <PromptInputV2ConfiguredSelect
-                    title={i18n.t("ui.promptInput.chooseVariant")}
+                    title={props.variantTitle ?? i18n.t("ui.promptInput.chooseVariant")}
                     keybind={["Shift", "Mod", "D"]}
                     control={control}
                   />
@@ -590,7 +591,10 @@ export function PromptInputV2Select(props: {
               <For each={props.options}>
                 {(option) => (
                   <MenuV2.RadioItem value={option.id} class="capitalize" closeOnSelect>
-                    {option.label}
+                    <span class="flex flex-col gap-0.5">
+                      <span>{option.label}</span>
+                      <Show when={option.description}><span class="text-11-regular text-text-weak normal-case">{option.description}</span></Show>
+                    </span>
                   </MenuV2.RadioItem>
                 )}
               </For>

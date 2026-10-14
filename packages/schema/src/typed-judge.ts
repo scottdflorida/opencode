@@ -29,13 +29,14 @@ export interface ChoiceRequest extends Schema.Schema.Type<typeof ChoiceRequest> 
 export const ChoiceAnswer = Schema.Struct({
   choice: Schema.String,
   confidence: Probability,
-  probabilities: Schema.Record(Schema.String, Probability),
+  probabilities: Schema.Record(Schema.String, Probability).pipe(optional),
 }).annotate({ identifier: "TypedJudge.ChoiceAnswer" })
 export interface ChoiceAnswer extends Schema.Schema.Type<typeof ChoiceAnswer> {}
 
 export const Usage = Schema.Struct({
   inputTokens: NonNegativeInt,
   outputTokens: NonNegativeInt,
+  estimatedCostUsd: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)).pipe(optional),
 }).annotate({ identifier: "TypedJudge.Usage" })
 export interface Usage extends Schema.Schema.Type<typeof Usage> {}
 

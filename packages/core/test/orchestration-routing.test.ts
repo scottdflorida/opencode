@@ -34,6 +34,100 @@ function snapshot(input: {
 }
 
 describe("OrchestrationRouting", () => {
+  test("uses measured host bytes separately from subscription percentages", () => {
+    const quota = snapshot({ providers: [], meters: [] })
+    const profile: Orchestration.RouteProfile = {
+      name: "local",
+      unknownCapacity: "wait",
+      exhausted: "wait_until_soonest_reset",
+      maxCapacityAgeSeconds: 300,
+      candidates: [
+        {
+          candidate: { id: "local", type: "direct", providerID: "local", modelID: "small" },
+          disabled: false,
+          requirements: [],
+          hostFreeMemoryAtLeastBytes: 16_000,
+        },
+      ],
+    }
+    const host: Orchestration.HostResourceSnapshot = {
+      schema: 1,
+      source: "host",
+      capturedAt: now,
+      platform: "darwin",
+      architecture: "arm64",
+      totalMemoryBytes: 64_000,
+      freeMemoryBytes: 8_000,
+      cpuCount: 12,
+      load1: 1,
+      load5: 1,
+      load15: 1,
+    }
+    const observed = { schema: 1, capturedAt: now, quota, host } as const
+    expect(OrchestrationRouting.resolveRoute(profile, quota, now, undefined, undefined, observed)).toMatchObject({
+      status: "waiting",
+      rejected: [{ code: "host_memory_below_threshold", availableBytes: 8_000, requiredBytes: 16_000 }],
+      retryAt: DateTime.makeUnsafe(DateTime.toEpochMillis(now) + 30_000),
+    })
+    expect(
+      OrchestrationRouting.resolveRoute(profile, quota, now, undefined, undefined, {
+        ...observed,
+        host: { ...host, freeMemoryBytes: 32_000 },
+      }),
+    ).toMatchObject({ status: "selected", selected: { id: "local" } })
+  })
+
+  test("rejects unsupported and unauthenticated harnesses before capacity checks", () => {
+    const profile: Orchestration.RouteProfile = {
+      name: "harnesses",
+      unknownCapacity: "allow",
+      exhausted: "fail",
+      maxCapacityAgeSeconds: 300,
+      candidates: [
+        {
+          candidate: { id: "cursor", type: "harness", harnessID: "cursor", modelID: "model" },
+          disabled: false,
+          requirements: [],
+        },
+        {
+          candidate: { id: "codex", type: "harness", harnessID: "codex", modelID: "model" },
+          disabled: false,
+          requirements: [],
+        },
+      ],
+    }
+    const capacity = snapshot({ providers: [], meters: [] })
+    expect(
+      OrchestrationRouting.resolveRoute(profile, capacity, now, undefined, {
+        schema: 1,
+        source: "host",
+        capturedAt: now,
+        harnesses: [
+          { id: "cursor", state: "unsupported" },
+          { id: "codex", state: "unauthenticated" },
+        ],
+      }),
+    ).toMatchObject({
+      status: "failed",
+      rejected: [{ code: "harness_unsupported" }, { code: "harness_unavailable" }],
+    })
+    expect(
+      OrchestrationRouting.resolveRoute(profile, capacity, now, undefined, {
+        schema: 1,
+        source: "host",
+        capturedAt: now,
+        harnesses: [
+          { id: "cursor", state: "unsupported" },
+          { id: "codex", state: "available" },
+        ],
+      }),
+    ).toMatchObject({
+      status: "selected",
+      selected: { id: "codex" },
+      rejected: [{ code: "harness_unsupported" }],
+    })
+  })
+
   test("normalizes editable snake-case configuration", () => {
     const profile = Schema.decodeUnknownSync(ConfigOrchestration.RouteProfile)({
       unknown_capacity: "wait",
@@ -45,6 +139,7 @@ describe("OrchestrationRouting", () => {
           type: "harness",
           harness: "cursor",
           model: "grok-4.6",
+          capability_tier: "frontier-high",
           effort: "xhigh",
           requires: [{ meter: "cursor.models", remaining_at_least: 20 }],
         },
@@ -58,6 +153,7 @@ describe("OrchestrationRouting", () => {
       maxCapacityAgeSeconds: 120,
       candidates: [
         {
+          capabilityTier: "frontier-high",
           candidate: {
             id: "cursor-grok",
             type: "harness",
@@ -110,6 +206,37 @@ describe("OrchestrationRouting", () => {
           required: 20,
         },
       ],
+    })
+  })
+
+  test("selects only candidates assigned to the requested capability tier", () => {
+    const profile: Orchestration.RouteProfile = {
+      name: "general",
+      unknownCapacity: "wait",
+      exhausted: "wait_until_soonest_reset",
+      maxCapacityAgeSeconds: 300,
+      candidates: [
+        { ...candidate("local-small", "mac", "mac.memory", 10), capabilityTier: "local-9b" },
+        { ...candidate("frontier", "codex", "codex.account.weekly", 10), capabilityTier: "frontier-high" },
+      ],
+    }
+    const capacity = snapshot({
+      providers: [{ id: "codex", state: "live", observedAt: now }],
+      meters: [{ id: "codex.account.weekly", state: "live", remaining: 80 }],
+    })
+
+    expect(OrchestrationRouting.resolveRoute(profile, capacity, now, "frontier-high")).toMatchObject({
+      status: "selected",
+      profileSnapshot: profile,
+      capacitySnapshot: capacity,
+      requestedTier: "frontier-high",
+      selected: { id: "frontier" },
+      rejected: [{ candidateID: "local-small", code: "tier_mismatch" }],
+    })
+    expect(OrchestrationRouting.resolveRoute(profile, capacity, now, "dense-30b")).toMatchObject({
+      status: "failed",
+      requestedTier: "dense-30b",
+      rejected: [{ code: "tier_mismatch" }, { code: "tier_mismatch" }],
     })
   })
 

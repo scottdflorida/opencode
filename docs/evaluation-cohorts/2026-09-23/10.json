@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Correct architecture package ownership map",
+    "description": "Update docs/architecture.md to show the actual packages/server handlers and the runtime dependency direction among Schema, Core, Protocol, Server, Client, and sdk-next. Check package files before editing. Keep the change focused on the package map and relevant invariants.",
+    "routeProfile": "cohort",
+    "capabilityTier": "complex",
+    "checks": [
+      {
+        "name": "server-package-map",
+        "command": "bun -e 'const text = await Bun.file(\"docs/architecture.md\").text(); if (!text.includes(\"packages/server\")) process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463843,
+      "updated": 1790159616700
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd38075003XmZZHGFTuMrv7v",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-complex",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd38075003XmZZHGFTuMrv7v"
+    },
+    "time": {
+      "created": 1790159585397,
+      "updated": 1790159616699,
+      "completed": 1790159616699
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd38077001UioHOquBzFA92R",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+    "attemptID": "attempt_0cdd38075003XmZZHGFTuMrv7v",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159583884,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159585397,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159583884,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159580808,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6136283136,
+          "cpuCount": 18,
+          "load1": 4.12255859375,
+          "load5": 4.15087890625,
+          "load15": 3.849609375
+        }
+      },
+      "requestedTier": "complex",
+      "selected": {
+        "id": "codex-luna-complex",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [
+        {
+          "candidateID": "codex-luna-routine",
+          "code": "tier_mismatch",
+          "message": "Candidate does not serve complex"
+        }
+      ],
+      "capacityCapturedAt": 1790159583884
+    },
+    "time": 1790159585399
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd3faba001z7ZZ4SogX3qfKu",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+      "attemptID": "attempt_0cdd38075003XmZZHGFTuMrv7v",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd3-878b-7980-ad52-ad235a00b33b",
+        "exitCode": 0,
+        "latencyMs": 30330,
+        "inputTokens": 145691,
+        "cachedInputTokens": 124416,
+        "outputTokens": 1156,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159616698
+    },
+    {
+      "id": "eval_0cdd3fabb001n0FsXNLxkZ2gGn",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+      "attemptID": "attempt_0cdd38075003XmZZHGFTuMrv7v",
+      "kind": "check:server-package-map",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'const text = await Bun.file(\"docs/architecture.md\").text(); if (!text.includes(\"packages/server\")) process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159616699
+    },
+    {
+      "id": "eval_0cdd3fabb003dG3R317AXJ9an2",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a5a3001IiDBBCIapCdfPe",
+      "attemptID": "attempt_0cdd38075003XmZZHGFTuMrv7v",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd38075003XmZZHGFTuMrv7v",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd38075003XmZZHGFTuMrv7v",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 1,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 0
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/docs/architecture.md b/docs/architecture.md\nindex 40437c533..f8ad5a683 100644\n--- a/docs/architecture.md\n+++ b/docs/architecture.md\n@@ -5,10 +5,12 @@\n OpenCode already provides most of the execution substrate JewelCode needs:\n \n - `packages/schema` defines shared data contracts.\n-- `packages/core` contains durable V2 sessions, event replay, model execution, tools, configuration, and project copies.\n+- `packages/core` contains durable V2 sessions, event replay, model execution, tools, configuration, and project copies. It depends on Schema.\n - `packages/protocol` defines the public service boundary.\n-- `packages/opencode` hosts server implementations and the compatibility application.\n-- `packages/client` contains generated clients.\n+- `packages/server` implements Protocol HTTP handlers and composes Core services.\n+- `packages/opencode` hosts the application and compatibility integrations.\n+- `packages/client` contains generated clients and depends at runtime on Schema and Protocol.\n+- `packages/sdk-next` composes Client, Core, and Server for the next SDK.\n - `packages/app` contains the Solid application.\n \n V2 Sessions persist conversations and serialize model turns. `ProjectCopy` creates and registers isolated project directories, including Git worktrees. The event store can support durable orchestration projections. These pieces should be composed rather than replaced.\n@@ -96,11 +98,13 @@ Capacity is a host-level observation with a short cache lifetime. The initial ad\n \n ## Package placement\n \n-- `packages/schema/src/orchestration`: events, identifiers, states, policies, decisions, and evaluation schemas\n+- `packages/schema/src/orchestration`: orchestration events, identifiers, states, policies, decisions, and evaluation schemas\n - `packages/core/src/orchestration`: aggregate logic, projections, scheduler, routing, capacity, executors, and evaluators\n-- `packages/protocol`: public orchestration API groups\n-- `packages/opencode`: HTTP handlers, layers, local process adapters, and compatibility integration\n-- `packages/client`: generated clients after Protocol or Server API changes\n+- `packages/protocol/src/groups/orchestration.ts`: public orchestration API group and its contracts\n+- `packages/server/src/handlers/orchestration.ts`: HTTP handler implementation, composed in `packages/server/src/handlers.ts`\n+- `packages/opencode`: application entry points and compatibility integrations, not the owner of Server HTTP handlers\n+- `packages/client`: generated clients for Protocol APIs; regenerate with `bun run generate` in `packages/client` after public Protocol or Server `HttpApi` changes\n+- `packages/sdk-next`: SDK composition over Client, Core, and Server\n - `packages/app`: mission-control views and operator actions\n \n-This preserves the repository's dependency direction. Client runtime code consumes Schema and Protocol contracts without importing Core or Server implementation details.\n+Runtime dependencies flow from Schema to Core and Protocol, then from Core and Protocol to Server. Client runtime code may depend on Schema and Protocol, but not Core or Server. Client's development-only Core and Server dependencies support generation tooling and do not change that runtime boundary. `sdk-next` is the composition package that brings Client, Core, and Server together.\n",
+        "truncated": false
+      },
+      "time": 1790159616699
+    }
+  ]
+}

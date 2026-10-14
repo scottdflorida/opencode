@@ -49,7 +49,7 @@ export function NewSessionView(props: {
                 <div class="flex min-h-7 min-w-0 flex-col items-center justify-center gap-0 text-v2-text-text-faint sm:flex-row">
                   <PromptProjectSelector controller={props.project} placement="bottom" />
                   <Show
-                    when={props.workspace.bar.visible()}
+                    when={props.input.view.agent?.current() !== "orchestrate" && props.workspace.bar.visible()}
                     fallback={
                       <PromptGitStatus branch={props.workspace.bar.branch()} noGit={!props.workspace.project.git()} />
                     }

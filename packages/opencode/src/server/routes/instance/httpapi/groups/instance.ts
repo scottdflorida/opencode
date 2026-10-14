@@ -27,7 +27,14 @@ export const VcsDiffQuery = Schema.Struct({
   ...WorkspaceRoutingQueryFields,
   mode: Vcs.Mode,
   context: Schema.optional(Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0))),
+  base: Schema.optional(Schema.String),
+  head: Schema.optional(Schema.String),
 })
+
+export class ApiVcsDiffRangeError extends Schema.ErrorClass<ApiVcsDiffRangeError>("VcsDiffRangeError")(
+  { name: Schema.Literal("VcsDiffRangeError"), data: Schema.Struct({ message: Schema.String }) },
+  { httpApiStatus: 400 },
+) {}
 
 export class ApiVcsApplyError extends Schema.ErrorClass<ApiVcsApplyError>("VcsApplyError")(
   {
@@ -104,6 +111,7 @@ export const InstanceApi = HttpApi.make("instance")
         HttpApiEndpoint.get("vcsDiff", InstancePaths.vcsDiff, {
           query: VcsDiffQuery,
           success: described(Schema.Array(Vcs.FileDiff), "VCS diff"),
+          error: ApiVcsDiffRangeError,
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "vcs.diff",

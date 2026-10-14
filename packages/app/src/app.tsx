@@ -64,16 +64,15 @@ import { ErrorPage } from "./pages/error"
 import { useCheckServerHealth } from "./utils/server-health"
 import { legacySessionHref, legacySessionServer, requireServerKey, sessionHref } from "./utils/session-route"
 import { createSessionLineage } from "@/pages/session/session-lineage"
-import { missionControlCopy } from "@/pages/mission-control-copy"
 
 import { SessionPage, SessionRouteErrorBoundary, TargetSessionRouteContent } from "@/pages/session"
 import { NewHome } from "@/pages/home"
 import { LegacyHome } from "@/pages/home/legacy-home"
 
 const NewSession = lazy(() => import("@/pages/new-session"))
-const MissionControl = lazy(() => import("@/pages/mission-control"))
+const Lab = lazy(() => import("@/pages/lab"))
 
-function MissionControlRoute() {
+function LabRoute() {
   const params = useParams<{ dir: string }>()
   const directory = createMemo(() => decodeDirectory(params.dir))
   return (
@@ -81,7 +80,7 @@ function MissionControlRoute() {
       {(value) => (
         <SelectedServerProviders>
           <SDKProvider directory={value}>
-            <MissionControl directory={value} />
+            <Lab directory={value} />
           </SDKProvider>
         </SelectedServerProviders>
       )}
@@ -352,9 +351,9 @@ function DesktopCommands() {
     if (params.dir) {
       commands.push({
         id: "orchestration.open",
-        title: missionControlCopy.open,
+        title: "Open Lab",
         category: language.t("command.category.project"),
-        onSelect: () => navigate(`/mission-control/${params.dir}`),
+        onSelect: () => navigate(`/lab/${params.dir}`),
       })
     }
     if (platform.platform === "desktop" && platform.exportDebugLogs) {
@@ -669,7 +668,7 @@ function Routes(props: { serverScoped?: JSX.Element }) {
         <Route path="/server/:serverKey/session/:id" component={TargetSessionRoute} />
       </Show>
       <Route path="/new-session" component={DraftRoute} />
-      <Route path="/mission-control/:dir" component={MissionControlRoute} />
+      <Route path="/lab/:dir" component={LabRoute} />
     </>
   )
 }

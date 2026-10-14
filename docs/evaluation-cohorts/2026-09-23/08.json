@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a59c001P5glrLrdPVef9U",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Match NO_PROXY hosts without case sensitivity",
+    "description": "In packages/opencode/src/util/proxy-env.ts, NO_PROXY host names should match URL host names without ASCII case sensitivity, including optional port matches. Preserve wildcard and suffix behavior; add focused coverage without relying on ambient proxy environment.",
+    "routeProfile": "cohort",
+    "capabilityTier": "complex",
+    "checks": [
+      {
+        "name": "proxy-case",
+        "command": "bun -e 'import { getProxyForUrl } from \"./packages/opencode/src/util/proxy-env.ts\"; process.env.no_proxy = \"EXAMPLE.COM\"; process.env.https_proxy = \"http://proxy.invalid:8080\"; if (getProxyForUrl(\"https://example.com\") !== undefined) process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463836,
+      "updated": 1790159585204
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a59c001P5glrLrdPVef9U",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-complex",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef7001j4Bc6yvdi1OpUZ"
+    },
+    "time": {
+      "created": 1790159548151,
+      "updated": 1790159585203,
+      "completed": 1790159585203
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd2eef900120re72uEjJ5r09",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a59c001P5glrLrdPVef9U",
+    "attemptID": "attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159523874,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159548151,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159523874,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159535784,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6502203392,
+          "cpuCount": 18,
+          "load1": 4.0986328125,
+          "load5": 4.12939453125,
+          "load15": 3.826171875
+        }
+      },
+      "requestedTier": "complex",
+      "selected": {
+        "id": "codex-luna-complex",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [
+        {
+          "candidateID": "codex-luna-routine",
+          "code": "tier_mismatch",
+          "message": "Candidate does not serve complex"
+        }
+      ],
+      "capacityCapturedAt": 1790159523874
+    },
+    "time": 1790159548153
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd37fb2001qXOFu9y329b2MV",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a59c001P5glrLrdPVef9U",
+      "attemptID": "attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd2-f23c-7581-a521-4c31c6627037",
+        "exitCode": 0,
+        "latencyMs": 36067,
+        "inputTokens": 162047,
+        "cachedInputTokens": 147200,
+        "outputTokens": 1327,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159585202
+    },
+    {
+      "id": "eval_0cdd37fb20036Vc65bqsCMli33",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a59c001P5glrLrdPVef9U",
+      "attemptID": "attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+      "kind": "check:proxy-case",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { getProxyForUrl } from \"./packages/opencode/src/util/proxy-env.ts\"; process.env.no_proxy = \"EXAMPLE.COM\"; process.env.https_proxy = \"http://proxy.invalid:8080\"; if (getProxyForUrl(\"https://example.com\") !== undefined) process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 0,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159585202
+    },
+    {
+      "id": "eval_0cdd37fb3001lR5lkqnCi2GRHV",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a59c001P5glrLrdPVef9U",
+      "attemptID": "attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2eef7001j4Bc6yvdi1OpUZ",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 1
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/opencode/src/util/proxy-env.ts b/packages/opencode/src/util/proxy-env.ts\nindex 6682b3ca1..e650444fc 100644\n--- a/packages/opencode/src/util/proxy-env.ts\n+++ b/packages/opencode/src/util/proxy-env.ts\n@@ -60,8 +60,9 @@ function shouldProxy(hostname: string, port: number) {\n     const proxyPort = parsed ? Number.parseInt(parsed[2]) : 0\n     if (proxyPort && proxyPort !== port) return true\n \n-    if (!/^[.*]/.test(proxyHostname)) return hostname !== proxyHostname\n-    return !hostname.endsWith(proxyHostname.startsWith(\"*\") ? proxyHostname.slice(1) : proxyHostname)\n+    const normalizedHostname = hostname.toLowerCase()\n+    if (!/^[.*]/.test(proxyHostname)) return normalizedHostname !== proxyHostname\n+    return !normalizedHostname.endsWith(proxyHostname.startsWith(\"*\") ? proxyHostname.slice(1) : proxyHostname)\n   })\n }\n \n\ndiff --git a/packages/opencode/test/util/proxy-env.test.ts b/packages/opencode/test/util/proxy-env.test.ts\nnew file mode 100644\nindex 000000000..eff1a1e5d\n--- /dev/null\n+++ b/packages/opencode/test/util/proxy-env.test.ts\n@@ -0,0 +1,37 @@\n+import { afterEach, describe, expect, test } from \"bun:test\"\n+import { getProxyForUrl } from \"../../src/util/proxy-env\"\n+\n+const original = {\n+  http_proxy: process.env.http_proxy,\n+  HTTP_PROXY: process.env.HTTP_PROXY,\n+  all_proxy: process.env.all_proxy,\n+  ALL_PROXY: process.env.ALL_PROXY,\n+  no_proxy: process.env.no_proxy,\n+  NO_PROXY: process.env.NO_PROXY,\n+}\n+\n+afterEach(() => {\n+  for (const [key, value] of Object.entries(original)) {\n+    if (value === undefined) delete process.env[key]\n+    else process.env[key] = value\n+  }\n+})\n+\n+describe(\"util.proxy-env\", () => {\n+  test(\"matches exact host names without case sensitivity, including ports\", () => {\n+    process.env.http_proxy = \"http://proxy.test\"\n+    process.env.no_proxy = \"EXAMPLE.COM:8080\"\n+\n+    expect(getProxyForUrl(\"http://example.com:8080/path\")).toBeUndefined()\n+    expect(getProxyForUrl(\"http://example.com:8081/path\")).toBe(\"http://proxy.test\")\n+  })\n+\n+  test(\"preserves case-insensitive suffix and wildcard matching\", () => {\n+    process.env.http_proxy = \"http://proxy.test\"\n+    process.env.no_proxy = \".EXAMPLE.COM,*.INTERNAL.TEST\"\n+\n+    expect(getProxyForUrl(\"http://api.example.com\")).toBeUndefined()\n+    expect(getProxyForUrl(\"http://api.internal.test\")).toBeUndefined()\n+    expect(getProxyForUrl(\"http://elsewhere.test\")).toBe(\"http://proxy.test\")\n+  })\n+})\n",
+        "truncated": false
+      },
+      "time": 1790159585203
+    }
+  ]
+}

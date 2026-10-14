@@ -16,6 +16,8 @@ import { Location } from "./location"
 import { LocationMutation } from "./location-mutation"
 import { LocationServiceMap } from "./location-service-map"
 import { OrchestrationRouting } from "./orchestration/routing"
+import { OrchestrationCapacity } from "./orchestration/capacity"
+import { OrchestrationPlanGenerator } from "./orchestration/generator"
 import { PermissionV2 } from "./permission"
 import { PluginV2 } from "./plugin"
 import { PluginInternal } from "./plugin/internal"
@@ -46,6 +48,8 @@ export const locationServices = LayerNode.group([
   Policy.node,
   Config.node,
   OrchestrationRouting.node,
+  OrchestrationCapacity.node,
+  OrchestrationPlanGenerator.node,
   TypedJudge.node,
   AgentV2.node,
   CommandV2.node,

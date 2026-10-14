@@ -3,12 +3,16 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { Popover } from "@opencode-ai/ui/popover"
-import { Suspense, createMemo, createSignal, lazy, Show, type JSX } from "solid-js"
+import { Suspense, createEffect, createMemo, createResource, createSignal, lazy, onCleanup, Show, type JSX } from "solid-js"
+import { DateTime, Schema } from "effect"
+import { Location } from "@opencode-ai/schema/location"
+import { Orchestration } from "@opencode-ai/schema/orchestration"
 import { useLanguage } from "@/context/language"
 import { ServerConnection, useServer } from "@/context/server"
 import { useServerSDK } from "@/context/server-sdk"
 import { useSync } from "@/context/sync"
 import { useGlobal } from "@/context/global"
+import { useSDK } from "@/context/sdk"
 import {
   hasNonBlockingServiceIssue,
   hasServiceNeedingAttention,
@@ -92,7 +96,31 @@ function DirectoryStatusPopover() {
   const server = useServerSDK()
   const global = useGlobal()
   const sync = useSync()
+  const sdk = useSDK()
   const [shown, setShown] = createSignal(false)
+  const [capacity, capacityActions] = createResource(
+    () => sdk().directory,
+    async (directory) => {
+      const query = new URLSearchParams({ "location[directory]": directory })
+      const response = await server().request(`/api/orchestration/resources?${query}`)
+      if (!response.ok) throw new Error(await response.text())
+      return (await Schema.decodeUnknownPromise(Location.response(Orchestration.ResourceObservation))(await response.json())).data
+    },
+  )
+  createEffect(() => {
+    sdk().directory
+    const timer = setInterval(() => void capacityActions.refetch(), 30_000)
+    onCleanup(() => clearInterval(timer))
+  })
+  const capacityWarning = createMemo(() => {
+    const snapshot = capacity()
+    if (!snapshot) return false
+    return snapshot.quota.status !== "live" ||
+      Date.now() - DateTime.toEpochMillis(snapshot.quota.capturedAt) > 300_000 ||
+      Date.now() - DateTime.toEpochMillis(snapshot.host.capturedAt) > 300_000 ||
+      (snapshot.harnesses ? Date.now() - DateTime.toEpochMillis(snapshot.harnesses.capturedAt) > 300_000 : false) ||
+      (snapshot.quota.providers.length > 0 && snapshot.quota.providers.every((item) => item.state !== "available"))
+  })
   const serverHealth = () => global.servers.health[ServerConnection.key(server().server)]?.healthy
   const ready = createMemo(() => serverHealth() === false || (sync().data.mcp_ready && sync().data.lsp_ready))
   const attention = createMemo(() =>
@@ -111,7 +139,7 @@ function DirectoryStatusPopover() {
     ready: ready(),
     serverHealth: serverHealth(),
     attention: attention(),
-    issue: issue(),
+    issue: issue() || capacityWarning(),
     label: language.t("status.popover.trigger"),
     onOpenChange: setShown,
     body: () => (

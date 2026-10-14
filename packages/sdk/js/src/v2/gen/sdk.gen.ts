@@ -113,6 +113,11 @@ import type {
   McpStatusResponses,
   ModelRef,
   MoveSessionDestination,
+  OrchestrationAcceptanceCriterion,
+  OrchestrationCapabilityTier,
+  OrchestrationCheck,
+  OrchestrationIntegrationOptions,
+  OrchestrationPlanOutput,
   OutputFormat,
   Part as Part2,
   PartDeleteErrors,
@@ -299,6 +304,84 @@ import type {
   V2LocationGetResponses,
   V2ModelListErrors,
   V2ModelListResponses,
+  V2OrchestrationAcceptErrors,
+  V2OrchestrationAcceptResponses,
+  V2OrchestrationAddDependencyErrors,
+  V2OrchestrationAddDependencyResponses,
+  V2OrchestrationAddTaskErrors,
+  V2OrchestrationAddTaskResponses,
+  V2OrchestrationAnswerRequestErrors,
+  V2OrchestrationAnswerRequestResponses,
+  V2OrchestrationApplyPlanErrors,
+  V2OrchestrationApplyPlanResponses,
+  V2OrchestrationCalibrationErrors,
+  V2OrchestrationCalibrationResponses,
+  V2OrchestrationCancelErrors,
+  V2OrchestrationCancelResponses,
+  V2OrchestrationCapacityErrors,
+  V2OrchestrationCapacityResponses,
+  V2OrchestrationCompareJudgesErrors,
+  V2OrchestrationCompareJudgesResponses,
+  V2OrchestrationComparePoliciesErrors,
+  V2OrchestrationComparePoliciesResponses,
+  V2OrchestrationCreateErrors,
+  V2OrchestrationCreateResponses,
+  V2OrchestrationEventsErrors,
+  V2OrchestrationEventsResponses,
+  V2OrchestrationFollowUpErrors,
+  V2OrchestrationFollowUpResponses,
+  V2OrchestrationGeneratePlanErrors,
+  V2OrchestrationGeneratePlanResponses,
+  V2OrchestrationGetErrors,
+  V2OrchestrationGetResponses,
+  V2OrchestrationHistoryErrors,
+  V2OrchestrationHistoryResponses,
+  V2OrchestrationIntegrateErrors,
+  V2OrchestrationIntegrateResponses,
+  V2OrchestrationIntegrationPreflightErrors,
+  V2OrchestrationIntegrationPreflightResponses,
+  V2OrchestrationIntegrationTargetsErrors,
+  V2OrchestrationIntegrationTargetsResponses,
+  V2OrchestrationJevStatusErrors,
+  V2OrchestrationJevStatusResponses,
+  V2OrchestrationLabelsErrors,
+  V2OrchestrationLabelsResponses,
+  V2OrchestrationLabelTriageErrors,
+  V2OrchestrationLabelTriageResponses,
+  V2OrchestrationListErrors,
+  V2OrchestrationListResponses,
+  V2OrchestrationPoliciesErrors,
+  V2OrchestrationPoliciesResponses,
+  V2OrchestrationProposePlanErrors,
+  V2OrchestrationProposePlanResponses,
+  V2OrchestrationRejectErrors,
+  V2OrchestrationRejectResponses,
+  V2OrchestrationReopenErrors,
+  V2OrchestrationReopenResponses,
+  V2OrchestrationResolveRouteErrors,
+  V2OrchestrationResolveRouteResponses,
+  V2OrchestrationResourcesErrors,
+  V2OrchestrationResourcesResponses,
+  V2OrchestrationRetryErrors,
+  V2OrchestrationRetryIntegrationErrors,
+  V2OrchestrationRetryIntegrationResponses,
+  V2OrchestrationRetryResponses,
+  V2OrchestrationReviewPacketErrors,
+  V2OrchestrationReviewPacketResponses,
+  V2OrchestrationRouteProfilesErrors,
+  V2OrchestrationRouteProfilesResponses,
+  V2OrchestrationStartErrors,
+  V2OrchestrationStartResponses,
+  V2OrchestrationSteerFollowUpErrors,
+  V2OrchestrationSteerFollowUpResponses,
+  V2OrchestrationSubmitErrors,
+  V2OrchestrationSubmitResponses,
+  V2OrchestrationSummariesErrors,
+  V2OrchestrationSummariesResponses,
+  V2OrchestrationTestJevErrors,
+  V2OrchestrationTestJevResponses,
+  V2OrchestrationVerifyCheckPresetErrors,
+  V2OrchestrationVerifyCheckPresetResponses,
   V2PermissionRequestListErrors,
   V2PermissionRequestListResponses,
   V2PermissionSavedListErrors,
@@ -2088,8 +2171,10 @@ export class Vcs extends HeyApiClient {
     parameters: {
       directory?: string
       workspace?: string
-      mode: "git" | "branch"
+      mode: "git" | "branch" | "range"
       context?: number
+      base?: string
+      head?: string
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -2102,6 +2187,8 @@ export class Vcs extends HeyApiClient {
             { in: "query", key: "workspace" },
             { in: "query", key: "mode" },
             { in: "query", key: "context" },
+            { in: "query", key: "base" },
+            { in: "query", key: "head" },
           ],
         },
       ],
@@ -6920,9 +7007,11 @@ export class ProjectCopy2 extends HeyApiClient {
         directory?: string
         workspace?: string
       }
-      strategy?: string
+      strategy?: OrchestrationCapabilityTier
       directory?: string
       name?: string
+      revision?: string
+      branch?: string
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -6936,6 +7025,8 @@ export class ProjectCopy2 extends HeyApiClient {
             { in: "body", key: "strategy" },
             { in: "body", key: "directory" },
             { in: "body", key: "name" },
+            { in: "body", key: "revision" },
+            { in: "body", key: "branch" },
           ],
         },
       ],
@@ -6981,6 +7072,1474 @@ export class ProjectCopy2 extends HeyApiClient {
       ThrowOnError
     >({
       url: "/experimental/project/{projectID}/copy/refresh",
+      ...options,
+      ...params,
+    })
+  }
+}
+
+export class Orchestration extends HeyApiClient {
+  /**
+   * List orchestration runs
+   *
+   * List durable orchestration runs for the current project.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<V2OrchestrationListResponses, V2OrchestrationListErrors, ThrowOnError>({
+      url: "/api/orchestration",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create an orchestration run
+   *
+   * Create a durable manual objective for the current project.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      objective?: string
+      policy?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "location" },
+            { in: "body", key: "objective" },
+            { in: "body", key: "policy" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationCreateResponses,
+      V2OrchestrationCreateErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * List project run summaries
+   */
+  public summaries<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationSummariesResponses,
+      V2OrchestrationSummariesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/summaries",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Submit an assignment
+   *
+   * Create a policy run, generate its plan, and start when plan approval is automatic.
+   */
+  public submit<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      objective?: string
+      policy?: string
+      judge?: "policy" | "jev" | "llm" | "experiment"
+      minConfidence?: number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN"
+      context?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "location" },
+            { in: "body", key: "objective" },
+            { in: "body", key: "policy" },
+            { in: "body", key: "judge" },
+            { in: "body", key: "minConfidence" },
+            { in: "body", key: "context" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationSubmitResponses,
+      V2OrchestrationSubmitErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/submit",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * List resolved orchestration policies
+   *
+   * Return validated policy snapshots and the configured default for the current project.
+   */
+  public policies<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationPoliciesResponses,
+      V2OrchestrationPoliciesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/policy",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Get provider capacity
+   *
+   * Return the latest cached provider-capacity observation.
+   */
+  public capacity<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationCapacityResponses,
+      V2OrchestrationCapacityErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/capacity",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Get Jev connection configuration
+   */
+  public jevStatus<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationJevStatusResponses,
+      V2OrchestrationJevStatusErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/judges/jev",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Test a Jev Choice call
+   */
+  public testJev<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).post<
+      V2OrchestrationTestJevResponses,
+      V2OrchestrationTestJevErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/judges/jev/test",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Run a check preset in an isolated worktree
+   */
+  public verifyCheckPreset<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationVerifyCheckPresetResponses,
+      V2OrchestrationVerifyCheckPresetErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/check-presets/{name}/run",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Get combined routing resources
+   *
+   * Return one versioned observation of provider quota and host resources.
+   */
+  public resources<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationResourcesResponses,
+      V2OrchestrationResourcesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/resources",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Compare judge arms
+   */
+  public compareJudges<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      since?: string
+      role?: "attempt" | "delivery"
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "location" },
+            { in: "query", key: "since" },
+            { in: "query", key: "role" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      V2OrchestrationCompareJudgesResponses,
+      V2OrchestrationCompareJudgesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/judges/compare",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Compare run policies
+   */
+  public comparePolicies<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      since?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "location" },
+            { in: "query", key: "since" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      V2OrchestrationComparePoliciesResponses,
+      V2OrchestrationComparePoliciesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/policies/compare",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * List blind review packets awaiting labels
+   */
+  public labels<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationLabelsResponses,
+      V2OrchestrationLabelsErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/labels",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Read shadow-judgment calibration
+   *
+   * Aggregate Jev validity, agreement with human review, latency, tokens, and priced estimates for the current project.
+   */
+  public calibration<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationCalibrationResponses,
+      V2OrchestrationCalibrationErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/calibration",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Add an orchestration task
+   *
+   * Add an explicit task and deterministic checks to a draft run.
+   */
+  public addTask<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      kind?: "agent" | "human"
+      title?: string
+      description?: string
+      routeProfile?: string
+      capabilityTier?: OrchestrationCapabilityTier
+      checks?: Array<OrchestrationCheck>
+      acceptanceCriteria?: Array<OrchestrationAcceptanceCriterion>
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "kind" },
+            { in: "body", key: "title" },
+            { in: "body", key: "description" },
+            { in: "body", key: "routeProfile" },
+            { in: "body", key: "capabilityTier" },
+            { in: "body", key: "checks" },
+            { in: "body", key: "acceptanceCriteria" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationAddTaskResponses,
+      V2OrchestrationAddTaskErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Propose a typed task graph
+   *
+   * Validate and durably store a bounded plan for an empty draft run.
+   */
+  public proposePlan<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      orchestrationPlanOutput: OrchestrationPlanOutput
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { key: "orchestrationPlanOutput", map: "body" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationProposePlanResponses,
+      V2OrchestrationProposePlanErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/plan",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Generate a plan proposal
+   *
+   * Use a routed direct model to generate a bounded task graph and store it for review.
+   */
+  public generatePlan<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      profile?: string
+      context?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "profile" },
+            { in: "body", key: "context" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationGeneratePlanResponses,
+      V2OrchestrationGeneratePlanErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/plan/generate",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Apply a plan proposal
+   *
+   * Atomically add a validated plan's tasks and dependencies to a draft run.
+   */
+  public applyPlan<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      planID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "planID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationApplyPlanResponses,
+      V2OrchestrationApplyPlanErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/plan/{planID}/apply",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Add a task dependency
+   *
+   * Require one task to be accepted before another becomes ready.
+   */
+  public addDependency<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      taskID?: string
+      dependsOnTaskID?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "taskID" },
+            { in: "body", key: "dependsOnTaskID" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationAddDependencyResponses,
+      V2OrchestrationAddDependencyErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/dependency",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Start an orchestration run
+   *
+   * Schedule ready tasks for isolated direct-model execution.
+   */
+  public start<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationStartResponses,
+      V2OrchestrationStartErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/start",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Cancel an orchestration run
+   *
+   * Interrupt local execution and cancel unfinished tasks.
+   */
+  public cancel<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationCancelResponses,
+      V2OrchestrationCancelErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/cancel",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * List local integration branches and worktrees
+   */
+  public integrationTargets<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      V2OrchestrationIntegrationTargetsResponses,
+      V2OrchestrationIntegrationTargetsErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/integration/targets",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Preview delivery integration
+   *
+   * Inspect target state and the commands for an explicit integration action.
+   */
+  public integrationPreflight<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      orchestrationIntegrationOptions: OrchestrationIntegrationOptions
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { key: "orchestrationIntegrationOptions", map: "body" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationIntegrationPreflightResponses,
+      V2OrchestrationIntegrationPreflightErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/integration/preflight",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Integrate a delivered turn
+   *
+   * Run the previewed Git or pull request action and record each completed step.
+   */
+  public integrate<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      orchestrationIntegrationOptions: OrchestrationIntegrationOptions
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { key: "orchestrationIntegrationOptions", map: "body" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationIntegrateResponses,
+      V2OrchestrationIntegrateErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/integration",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Retry remaining integration steps
+   *
+   * Verify recorded Git refs and continue a failed integration after its completed steps.
+   */
+  public retryIntegration<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      integrationID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "integrationID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationRetryIntegrationResponses,
+      V2OrchestrationRetryIntegrationErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/integration/{integrationID}/retry",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Start a follow-up turn
+   *
+   * Continue on the run branch with a new assignment and a new delivery review.
+   */
+  public followUp<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      objective?: string
+      context?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "objective" },
+            { in: "body", key: "context" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationFollowUpResponses,
+      V2OrchestrationFollowUpErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/follow-up",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Send a queued follow-up to the current planner
+   */
+  public steerFollowUp<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      turnID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "turnID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationSteerFollowUpResponses,
+      V2OrchestrationSteerFollowUpErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/follow-up/{turnID}/steer",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Read attempt evidence without shadow judgments
+   *
+   * Return a review packet for an independent triage label.
+   */
+  public reviewPacket<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      V2OrchestrationReviewPacketResponses,
+      V2OrchestrationReviewPacketErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/review-packet",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Record an independent attempt triage label
+   *
+   * Store one immutable reviewer label per completed attempt, separate from acceptance.
+   */
+  public labelTriage<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      decision?: "looks_ready" | "needs_attention"
+      note?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "decision" },
+            { in: "body", key: "note" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationLabelTriageResponses,
+      V2OrchestrationLabelTriageErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/triage",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Accept a task result
+   *
+   * Record acceptance and unlock dependent tasks.
+   */
+  public accept<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      note?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "note" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationAcceptResponses,
+      V2OrchestrationAcceptErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/accept",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Reject a task result
+   *
+   * Record rejection and leave the isolated result unmerged.
+   */
+  public reject<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      note?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "note" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationRejectResponses,
+      V2OrchestrationRejectErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/reject",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Reopen accepted work with feedback
+   *
+   * Revert an accepted merge at a safe boundary and schedule a revision with human feedback.
+   */
+  public reopen<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      feedback?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "feedback" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationReopenResponses,
+      V2OrchestrationReopenErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/reopen",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Answer an orchestration human request
+   *
+   * Record guidance or a budget decision and resume the affected task.
+   */
+  public answerRequest<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      requestID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      answer?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "requestID" },
+            { in: "query", key: "location" },
+            { in: "body", key: "answer" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationAnswerRequestResponses,
+      V2OrchestrationAnswerRequestErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/request/{requestID}/answer",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Retry a task
+   *
+   * Create a fresh attempt with a new worktree and Session.
+   */
+  public retry<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      taskID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationRetryResponses,
+      V2OrchestrationRetryErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/task/{taskID}/retry",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * List route profiles
+   *
+   * Return normalized route profiles from the effective location configuration.
+   */
+  public routeProfiles<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "location" }] }])
+    return (options?.client ?? this.client).get<
+      V2OrchestrationRouteProfilesResponses,
+      V2OrchestrationRouteProfilesErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/route-profile",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Resolve a route without executing it
+   *
+   * Dry-run an ordered route profile against the latest cached capacity snapshot.
+   */
+  public resolveRoute<ThrowOnError extends boolean = false>(
+    parameters?: {
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      profile?: string
+      capabilityTier?: OrchestrationCapabilityTier
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "location" },
+            { in: "body", key: "profile" },
+            { in: "body", key: "capabilityTier" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      V2OrchestrationResolveRouteResponses,
+      V2OrchestrationResolveRouteErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/route/resolve",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Get run event history
+   *
+   * Read one finite page of durable run events after an exclusive sequence.
+   */
+  public history<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      limit?: string
+      after?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "query", key: "limit" },
+            { in: "query", key: "after" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      V2OrchestrationHistoryResponses,
+      V2OrchestrationHistoryErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/history",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Subscribe to run events
+   *
+   * Replay durable run events after a sequence, then continue with new events.
+   */
+  public events<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+      after?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+            { in: "query", key: "after" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).sse.get<
+      V2OrchestrationEventsResponses,
+      V2OrchestrationEventsErrors,
+      ThrowOnError
+    >({
+      url: "/api/orchestration/{runID}/event",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Get an orchestration run
+   *
+   * Return a durable run with tasks, dependencies, attempts, decisions, and evaluations.
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      runID: string
+      location?: {
+        directory?: string
+        workspace?: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "runID" },
+            { in: "query", key: "location" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<V2OrchestrationGetResponses, V2OrchestrationGetErrors, ThrowOnError>({
+      url: "/api/orchestration/{runID}",
       ...options,
       ...params,
     })
@@ -7071,6 +8630,11 @@ export class V2 extends HeyApiClient {
   private _projectCopy?: ProjectCopy2
   get projectCopy(): ProjectCopy2 {
     return (this._projectCopy ??= new ProjectCopy2({ client: this.client }))
+  }
+
+  private _orchestration?: Orchestration
+  get orchestration(): Orchestration {
+    return (this._orchestration ??= new Orchestration({ client: this.client }))
   }
 }
 

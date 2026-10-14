@@ -80,6 +80,9 @@ type CreateInput = {
   id?: SessionSchema.ID
   agent?: AgentV2.ID
   model?: ModelV2.Ref
+  parentID?: SessionSchema.ID
+  kind?: SessionSchema.Info["kind"]
+  title?: string
   location: Location.Ref
 }
 
@@ -95,7 +98,7 @@ export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()("Ses
 export class OperationUnavailableError extends Schema.TaggedErrorClass<OperationUnavailableError>()(
   "Session.OperationUnavailableError",
   {
-    operation: Schema.Literals(["move", "shell", "skill", "switchAgent", "compact", "wait"]),
+  operation: Schema.Literals(["move", "shell", "skill", "switchAgent", "compact", "wait", "prompt", "resume"]),
   },
 ) {}
 
@@ -150,7 +153,33 @@ export interface Interface {
     prompt: PromptInput.Prompt
     delivery?: SessionInput.Delivery
     resume?: boolean
-  }) => Effect.Effect<SessionInput.Admitted, NotFoundError | PromptConflictError>
+  }) => Effect.Effect<SessionInput.Admitted, NotFoundError | PromptConflictError | OperationUnavailableError>
+  readonly appendControllerUser: (input: {
+    readonly sessionID: SessionSchema.ID
+    readonly id?: SessionMessage.ID
+    readonly text: string
+  }) => Effect.Effect<SessionMessage.ID, NotFoundError | OperationUnavailableError>
+  readonly appendControllerText: (input: {
+    readonly sessionID: SessionSchema.ID
+    readonly id?: SessionMessage.ID
+    readonly text: string
+    readonly kind?: "summary" | "milestone" | "transcript"
+  }) => Effect.Effect<SessionMessage.ID, NotFoundError | OperationUnavailableError>
+  readonly appendControllerPart: (input: {
+    readonly sessionID: SessionSchema.ID
+    readonly id?: SessionMessage.ID
+    readonly kind: SessionEvent.ControllerPart["data"]["kind"]
+    readonly title: string
+    readonly summary: string
+    readonly detail: Record<string, unknown>
+  }) => Effect.Effect<SessionMessage.ID, NotFoundError | OperationUnavailableError>
+  readonly updateControllerPart: (input: {
+    readonly sessionID: SessionSchema.ID
+    readonly id: SessionMessage.ID
+    readonly title: string
+    readonly summary: string
+    readonly detail: Record<string, unknown>
+  }) => Effect.Effect<void, NotFoundError | OperationUnavailableError>
   readonly shell: (input: {
     id?: EventV2.ID
     sessionID: SessionSchema.ID
@@ -166,7 +195,7 @@ export interface Interface {
   readonly compact: (input: CompactInput) => Effect.Effect<void, NotFoundError | OperationUnavailableError>
   readonly wait: (id: SessionSchema.ID) => Effect.Effect<void, NotFoundError | OperationUnavailableError>
   readonly active: Effect.Effect<ReadonlySet<SessionSchema.ID>>
-  readonly resume: (sessionID: SessionSchema.ID) => Effect.Effect<void, NotFoundError | SessionRunner.RunError>
+  readonly resume: (sessionID: SessionSchema.ID) => Effect.Effect<void, NotFoundError | SessionRunner.RunError | OperationUnavailableError>
   readonly interrupt: (sessionID: SessionSchema.ID) => Effect.Effect<void>
   readonly revert: {
     readonly stage: (input: {
@@ -225,7 +254,9 @@ const layer = Layer.effect(
           directory: input.location.directory,
           path: path.relative(project.directory, input.location.directory).replaceAll("\\", "/"),
           workspaceID: input.location.workspaceID ? WorkspaceV2.ID.make(input.location.workspaceID) : undefined,
-          title: `New session - ${new Date(now).toISOString()}`,
+          title: input.title ?? `New session - ${new Date(now).toISOString()}`,
+          parentID: input.parentID,
+          metadata: input.kind ? { kind: input.kind } : undefined,
           agent: input.agent,
           model: input.model
             ? {
@@ -360,7 +391,8 @@ const layer = Layer.effect(
       prompt: Effect.fn("V2Session.prompt")((input) =>
         Effect.uninterruptible(
           Effect.gen(function* () {
-            yield* result.get(input.sessionID)
+            const session = yield* result.get(input.sessionID)
+            if (session.kind) return yield* new OperationUnavailableError({ operation: "prompt" })
             const prompt = resolvePrompt(input.prompt)
             const messageID = input.id ?? SessionMessage.ID.create()
             const delivery = input.delivery ?? "steer"
@@ -384,6 +416,72 @@ const layer = Layer.effect(
           }),
         ),
       ),
+      appendControllerUser: Effect.fn("V2Session.appendControllerUser")(function* (input) {
+        const session = yield* result.get(input.sessionID)
+        if (session.kind !== "orchestration")
+          return yield* new OperationUnavailableError({ operation: "prompt" })
+        const messageID = input.id ?? SessionMessage.ID.create()
+        if (yield* result.message({ sessionID: input.sessionID, messageID })) return messageID
+        yield* events.publish(SessionEvent.Prompted, {
+          sessionID: input.sessionID,
+          messageID,
+          timestamp: yield* DateTime.now,
+          prompt: resolvePrompt(PromptInput.Prompt.make({ text: input.text })),
+          delivery: "steer",
+        })
+        return messageID
+      }),
+      appendControllerText: Effect.fn("V2Session.appendControllerText")(function* (input) {
+        const session = yield* result.get(input.sessionID)
+        if (session.kind !== "orchestration" && session.kind !== "attempt_mirror")
+          return yield* new OperationUnavailableError({ operation: "prompt" })
+        const messageID = input.id ?? SessionMessage.ID.create()
+        if (yield* result.message({ sessionID: input.sessionID, messageID })) return messageID
+        yield* events.publish(SessionEvent.ControllerText, {
+          sessionID: input.sessionID,
+          messageID,
+          text: input.text,
+          kind: input.kind ?? "summary",
+          timestamp: yield* DateTime.now,
+        })
+        return messageID
+      }),
+      appendControllerPart: Effect.fn("V2Session.appendControllerPart")(function* (input) {
+        const session = yield* result.get(input.sessionID)
+        if (session.kind !== "orchestration")
+          return yield* new OperationUnavailableError({ operation: "prompt" })
+        const messageID = input.id ?? SessionMessage.ID.create()
+        if (yield* result.message({ sessionID: input.sessionID, messageID })) return messageID
+        yield* events.publish(SessionEvent.ControllerPart, {
+          sessionID: input.sessionID,
+          messageID,
+          kind: input.kind,
+          title: input.title,
+          summary: input.summary,
+          detail: input.detail,
+          timestamp: yield* DateTime.now,
+        })
+        return messageID
+      }),
+      updateControllerPart: Effect.fn("V2Session.updateControllerPart")(function* (input) {
+        const session = yield* result.get(input.sessionID)
+        if (session.kind !== "orchestration")
+          return yield* new OperationUnavailableError({ operation: "prompt" })
+        const message = yield* result.message({ sessionID: input.sessionID, messageID: input.id })
+        if (!message || message.type !== "assistant") return
+        const tool = message.content.find((item) => item.type === "tool" && item.id === input.id)
+        if (!tool || tool.type !== "tool" || tool.state.status !== "completed") return
+        if (tool.state.input.title === input.title && tool.state.content[0]?.type === "text" &&
+          tool.state.content[0].text === input.summary && JSON.stringify(tool.state.structured) === JSON.stringify(input.detail)) return
+        yield* events.publish(SessionEvent.ControllerPartUpdated, {
+          sessionID: input.sessionID,
+          messageID: input.id,
+          title: input.title,
+          summary: input.summary,
+          detail: input.detail,
+          timestamp: yield* DateTime.now,
+        })
+      }),
       shell: Effect.fn("V2Session.shell")(function* () {
         return yield* new OperationUnavailableError({ operation: "shell" })
       }),
@@ -424,7 +522,8 @@ const layer = Layer.effect(
       }),
       active: execution.active,
       resume: Effect.fn("V2Session.resume")(function* (sessionID) {
-        yield* result.get(sessionID)
+        const session = yield* result.get(sessionID)
+        if (session.kind) return yield* new OperationUnavailableError({ operation: "resume" })
         yield* execution.resume(sessionID)
       }),
       interrupt: Effect.fn("V2Session.interrupt")((sessionID) =>

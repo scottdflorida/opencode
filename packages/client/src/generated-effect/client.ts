@@ -642,12 +642,20 @@ type Endpoint17_0Input = {
   readonly strategy: Endpoint17_0Request["payload"]["strategy"]
   readonly directory: Endpoint17_0Request["payload"]["directory"]
   readonly name?: Endpoint17_0Request["payload"]["name"]
+  readonly revision?: Endpoint17_0Request["payload"]["revision"]
+  readonly branch?: Endpoint17_0Request["payload"]["branch"]
 }
 const Endpoint17_0 = (raw: RawClient["server.projectCopy"]) => (input: Endpoint17_0Input) =>
   raw["projectCopy.create"]({
     params: { projectID: input["projectID"] },
     query: { location: input["location"] },
-    payload: { strategy: input["strategy"], directory: input["directory"], name: input["name"] },
+    payload: {
+      strategy: input["strategy"],
+      directory: input["directory"],
+      name: input["name"],
+      revision: input["revision"],
+      branch: input["branch"],
+    },
   }).pipe(Effect.mapError(mapClientError))
 
 type Endpoint17_1Request = Parameters<RawClient["server.projectCopy"]["projectCopy.remove"]>[0]
@@ -686,157 +694,546 @@ type Endpoint18_0Input = { readonly location?: Endpoint18_0Request["query"]["loc
 const Endpoint18_0 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_0Input) =>
   raw["orchestration.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_1Request = Parameters<RawClient["server.orchestration"]["orchestration.create"]>[0]
-type Endpoint18_1Input = {
-  readonly location?: Endpoint18_1Request["query"]["location"]
-  readonly objective: Endpoint18_1Request["payload"]["objective"]
+type Endpoint18_1Request = Parameters<RawClient["server.orchestration"]["orchestration.summaries"]>[0]
+type Endpoint18_1Input = { readonly location?: Endpoint18_1Request["query"]["location"] }
+const Endpoint18_1 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_1Input) =>
+  raw["orchestration.summaries"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_2Request = Parameters<RawClient["server.orchestration"]["orchestration.create"]>[0]
+type Endpoint18_2Input = {
+  readonly location?: Endpoint18_2Request["query"]["location"]
+  readonly objective: Endpoint18_2Request["payload"]["objective"]
+  readonly policy?: Endpoint18_2Request["payload"]["policy"]
 }
-const Endpoint18_1 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_1Input) =>
+const Endpoint18_2 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_2Input) =>
   raw["orchestration.create"]({
     query: { location: input["location"] },
-    payload: { objective: input["objective"] },
+    payload: { objective: input["objective"], policy: input["policy"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_2Request = Parameters<RawClient["server.orchestration"]["orchestration.capacity"]>[0]
-type Endpoint18_2Input = { readonly location?: Endpoint18_2Request["query"]["location"] }
-const Endpoint18_2 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_2Input) =>
-  raw["orchestration.capacity"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
-
-type Endpoint18_3Request = Parameters<RawClient["server.orchestration"]["orchestration.addTask"]>[0]
+type Endpoint18_3Request = Parameters<RawClient["server.orchestration"]["orchestration.submit"]>[0]
 type Endpoint18_3Input = {
-  readonly runID: Endpoint18_3Request["params"]["runID"]
   readonly location?: Endpoint18_3Request["query"]["location"]
-  readonly title: Endpoint18_3Request["payload"]["title"]
-  readonly description?: Endpoint18_3Request["payload"]["description"]
-  readonly routeProfile?: Endpoint18_3Request["payload"]["routeProfile"]
-  readonly checks?: Endpoint18_3Request["payload"]["checks"]
+  readonly objective: Endpoint18_3Request["payload"]["objective"]
+  readonly policy?: Endpoint18_3Request["payload"]["policy"]
+  readonly judge?: Endpoint18_3Request["payload"]["judge"]
+  readonly minConfidence?: Endpoint18_3Request["payload"]["minConfidence"]
+  readonly context?: Endpoint18_3Request["payload"]["context"]
 }
 const Endpoint18_3 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_3Input) =>
+  raw["orchestration.submit"]({
+    query: { location: input["location"] },
+    payload: {
+      objective: input["objective"],
+      policy: input["policy"],
+      judge: input["judge"],
+      minConfidence: input["minConfidence"],
+      context: input["context"],
+    },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_4Request = Parameters<RawClient["server.orchestration"]["orchestration.policies"]>[0]
+type Endpoint18_4Input = { readonly location?: Endpoint18_4Request["query"]["location"] }
+const Endpoint18_4 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_4Input) =>
+  raw["orchestration.policies"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_5Request = Parameters<RawClient["server.orchestration"]["orchestration.capacity"]>[0]
+type Endpoint18_5Input = { readonly location?: Endpoint18_5Request["query"]["location"] }
+const Endpoint18_5 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_5Input) =>
+  raw["orchestration.capacity"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_6Request = Parameters<RawClient["server.orchestration"]["orchestration.jevStatus"]>[0]
+type Endpoint18_6Input = { readonly location?: Endpoint18_6Request["query"]["location"] }
+const Endpoint18_6 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_6Input) =>
+  raw["orchestration.jevStatus"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_7Request = Parameters<RawClient["server.orchestration"]["orchestration.testJev"]>[0]
+type Endpoint18_7Input = { readonly location?: Endpoint18_7Request["query"]["location"] }
+const Endpoint18_7 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_7Input) =>
+  raw["orchestration.testJev"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_8Request = Parameters<RawClient["server.orchestration"]["orchestration.verifyCheckPreset"]>[0]
+type Endpoint18_8Input = {
+  readonly name: Endpoint18_8Request["params"]["name"]
+  readonly location?: Endpoint18_8Request["query"]["location"]
+}
+const Endpoint18_8 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_8Input) =>
+  raw["orchestration.verifyCheckPreset"]({
+    params: { name: input["name"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_9Request = Parameters<RawClient["server.orchestration"]["orchestration.resources"]>[0]
+type Endpoint18_9Input = { readonly location?: Endpoint18_9Request["query"]["location"] }
+const Endpoint18_9 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_9Input) =>
+  raw["orchestration.resources"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_10Request = Parameters<RawClient["server.orchestration"]["orchestration.compareJudges"]>[0]
+type Endpoint18_10Input = {
+  readonly location?: Endpoint18_10Request["query"]["location"]
+  readonly since?: Endpoint18_10Request["query"]["since"]
+  readonly role?: Endpoint18_10Request["query"]["role"]
+}
+const Endpoint18_10 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_10Input) =>
+  raw["orchestration.compareJudges"]({
+    query: { location: input?.["location"], since: input?.["since"], role: input?.["role"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_11Request = Parameters<RawClient["server.orchestration"]["orchestration.comparePolicies"]>[0]
+type Endpoint18_11Input = {
+  readonly location?: Endpoint18_11Request["query"]["location"]
+  readonly since?: Endpoint18_11Request["query"]["since"]
+}
+const Endpoint18_11 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_11Input) =>
+  raw["orchestration.comparePolicies"]({ query: { location: input?.["location"], since: input?.["since"] } }).pipe(
+    Effect.mapError(mapClientError),
+  )
+
+type Endpoint18_12Request = Parameters<RawClient["server.orchestration"]["orchestration.labels"]>[0]
+type Endpoint18_12Input = { readonly location?: Endpoint18_12Request["query"]["location"] }
+const Endpoint18_12 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_12Input) =>
+  raw["orchestration.labels"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_13Request = Parameters<RawClient["server.orchestration"]["orchestration.calibration"]>[0]
+type Endpoint18_13Input = { readonly location?: Endpoint18_13Request["query"]["location"] }
+const Endpoint18_13 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_13Input) =>
+  raw["orchestration.calibration"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_14Request = Parameters<RawClient["server.orchestration"]["orchestration.addTask"]>[0]
+type Endpoint18_14Input = {
+  readonly runID: Endpoint18_14Request["params"]["runID"]
+  readonly location?: Endpoint18_14Request["query"]["location"]
+  readonly kind?: Endpoint18_14Request["payload"]["kind"]
+  readonly title: Endpoint18_14Request["payload"]["title"]
+  readonly description?: Endpoint18_14Request["payload"]["description"]
+  readonly routeProfile?: Endpoint18_14Request["payload"]["routeProfile"]
+  readonly capabilityTier?: Endpoint18_14Request["payload"]["capabilityTier"]
+  readonly checks?: Endpoint18_14Request["payload"]["checks"]
+  readonly acceptanceCriteria?: Endpoint18_14Request["payload"]["acceptanceCriteria"]
+}
+const Endpoint18_14 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_14Input) =>
   raw["orchestration.addTask"]({
     params: { runID: input["runID"] },
     query: { location: input["location"] },
     payload: {
+      kind: input["kind"],
       title: input["title"],
       description: input["description"],
       routeProfile: input["routeProfile"],
+      capabilityTier: input["capabilityTier"],
       checks: input["checks"],
+      acceptanceCriteria: input["acceptanceCriteria"],
     },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_4Request = Parameters<RawClient["server.orchestration"]["orchestration.addDependency"]>[0]
-type Endpoint18_4Input = {
-  readonly runID: Endpoint18_4Request["params"]["runID"]
-  readonly location?: Endpoint18_4Request["query"]["location"]
-  readonly taskID: Endpoint18_4Request["payload"]["taskID"]
-  readonly dependsOnTaskID: Endpoint18_4Request["payload"]["dependsOnTaskID"]
+type Endpoint18_15Request = Parameters<RawClient["server.orchestration"]["orchestration.proposePlan"]>[0]
+type Endpoint18_15Input = {
+  readonly runID: Endpoint18_15Request["params"]["runID"]
+  readonly location?: Endpoint18_15Request["query"]["location"]
+  readonly rationale?: Endpoint18_15Request["payload"]["rationale"]
+  readonly clauses?: Endpoint18_15Request["payload"]["clauses"]
+  readonly cancelTaskIDs?: Endpoint18_15Request["payload"]["cancelTaskIDs"]
+  readonly tasks: Endpoint18_15Request["payload"]["tasks"]
 }
-const Endpoint18_4 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_4Input) =>
+const Endpoint18_15 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_15Input) =>
+  raw["orchestration.proposePlan"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+    payload: {
+      rationale: input["rationale"],
+      clauses: input["clauses"],
+      cancelTaskIDs: input["cancelTaskIDs"],
+      tasks: input["tasks"],
+    },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_16Request = Parameters<RawClient["server.orchestration"]["orchestration.generatePlan"]>[0]
+type Endpoint18_16Input = {
+  readonly runID: Endpoint18_16Request["params"]["runID"]
+  readonly location?: Endpoint18_16Request["query"]["location"]
+  readonly profile?: Endpoint18_16Request["payload"]["profile"]
+  readonly context?: Endpoint18_16Request["payload"]["context"]
+}
+const Endpoint18_16 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_16Input) =>
+  raw["orchestration.generatePlan"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+    payload: { profile: input["profile"], context: input["context"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_17Request = Parameters<RawClient["server.orchestration"]["orchestration.applyPlan"]>[0]
+type Endpoint18_17Input = {
+  readonly runID: Endpoint18_17Request["params"]["runID"]
+  readonly planID: Endpoint18_17Request["params"]["planID"]
+  readonly location?: Endpoint18_17Request["query"]["location"]
+}
+const Endpoint18_17 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_17Input) =>
+  raw["orchestration.applyPlan"]({
+    params: { runID: input["runID"], planID: input["planID"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_18Request = Parameters<RawClient["server.orchestration"]["orchestration.addDependency"]>[0]
+type Endpoint18_18Input = {
+  readonly runID: Endpoint18_18Request["params"]["runID"]
+  readonly location?: Endpoint18_18Request["query"]["location"]
+  readonly taskID: Endpoint18_18Request["payload"]["taskID"]
+  readonly dependsOnTaskID: Endpoint18_18Request["payload"]["dependsOnTaskID"]
+}
+const Endpoint18_18 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_18Input) =>
   raw["orchestration.addDependency"]({
     params: { runID: input["runID"] },
     query: { location: input["location"] },
     payload: { taskID: input["taskID"], dependsOnTaskID: input["dependsOnTaskID"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_5Request = Parameters<RawClient["server.orchestration"]["orchestration.start"]>[0]
-type Endpoint18_5Input = {
-  readonly runID: Endpoint18_5Request["params"]["runID"]
-  readonly location?: Endpoint18_5Request["query"]["location"]
+type Endpoint18_19Request = Parameters<RawClient["server.orchestration"]["orchestration.start"]>[0]
+type Endpoint18_19Input = {
+  readonly runID: Endpoint18_19Request["params"]["runID"]
+  readonly location?: Endpoint18_19Request["query"]["location"]
 }
-const Endpoint18_5 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_5Input) =>
+const Endpoint18_19 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_19Input) =>
   raw["orchestration.start"]({ params: { runID: input["runID"] }, query: { location: input["location"] } }).pipe(
     Effect.mapError(mapClientError),
   )
 
-type Endpoint18_6Request = Parameters<RawClient["server.orchestration"]["orchestration.cancel"]>[0]
-type Endpoint18_6Input = {
-  readonly runID: Endpoint18_6Request["params"]["runID"]
-  readonly location?: Endpoint18_6Request["query"]["location"]
+type Endpoint18_20Request = Parameters<RawClient["server.orchestration"]["orchestration.cancel"]>[0]
+type Endpoint18_20Input = {
+  readonly runID: Endpoint18_20Request["params"]["runID"]
+  readonly location?: Endpoint18_20Request["query"]["location"]
 }
-const Endpoint18_6 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_6Input) =>
+const Endpoint18_20 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_20Input) =>
   raw["orchestration.cancel"]({ params: { runID: input["runID"] }, query: { location: input["location"] } }).pipe(
     Effect.mapError(mapClientError),
   )
 
-type Endpoint18_7Request = Parameters<RawClient["server.orchestration"]["orchestration.accept"]>[0]
-type Endpoint18_7Input = {
-  readonly runID: Endpoint18_7Request["params"]["runID"]
-  readonly taskID: Endpoint18_7Request["params"]["taskID"]
-  readonly location?: Endpoint18_7Request["query"]["location"]
-  readonly note?: Endpoint18_7Request["payload"]["note"]
+type Endpoint18_21Request = Parameters<RawClient["server.orchestration"]["orchestration.integrationTargets"]>[0]
+type Endpoint18_21Input = {
+  readonly runID: Endpoint18_21Request["params"]["runID"]
+  readonly location?: Endpoint18_21Request["query"]["location"]
 }
-const Endpoint18_7 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_7Input) =>
+const Endpoint18_21 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_21Input) =>
+  raw["orchestration.integrationTargets"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_22Request = Parameters<RawClient["server.orchestration"]["orchestration.integrationPreflight"]>[0]
+type Endpoint18_22Input = {
+  readonly runID: Endpoint18_22Request["params"]["runID"]
+  readonly location?: Endpoint18_22Request["query"]["location"]
+  readonly action: Endpoint18_22Request["payload"]["action"]
+  readonly branch?: Endpoint18_22Request["payload"]["branch"]
+  readonly targetBranch?: Endpoint18_22Request["payload"]["targetBranch"]
+  readonly remote?: Endpoint18_22Request["payload"]["remote"]
+  readonly remoteBranch?: Endpoint18_22Request["payload"]["remoteBranch"]
+  readonly baseBranch?: Endpoint18_22Request["payload"]["baseBranch"]
+  readonly history?: Endpoint18_22Request["payload"]["history"]
+  readonly mergeStrategy?: Endpoint18_22Request["payload"]["mergeStrategy"]
+  readonly commitMessage?: Endpoint18_22Request["payload"]["commitMessage"]
+  readonly draft?: Endpoint18_22Request["payload"]["draft"]
+  readonly reviewers?: Endpoint18_22Request["payload"]["reviewers"]
+  readonly confirmDefaultPush?: Endpoint18_22Request["payload"]["confirmDefaultPush"]
+  readonly confirmDiscard?: Endpoint18_22Request["payload"]["confirmDiscard"]
+  readonly expectedHead: Endpoint18_22Request["payload"]["expectedHead"]
+  readonly expectedTargetHead?: Endpoint18_22Request["payload"]["expectedTargetHead"]
+}
+const Endpoint18_22 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_22Input) =>
+  raw["orchestration.integrationPreflight"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+    payload: {
+      action: input["action"],
+      branch: input["branch"],
+      targetBranch: input["targetBranch"],
+      remote: input["remote"],
+      remoteBranch: input["remoteBranch"],
+      baseBranch: input["baseBranch"],
+      history: input["history"],
+      mergeStrategy: input["mergeStrategy"],
+      commitMessage: input["commitMessage"],
+      draft: input["draft"],
+      reviewers: input["reviewers"],
+      confirmDefaultPush: input["confirmDefaultPush"],
+      confirmDiscard: input["confirmDiscard"],
+      expectedHead: input["expectedHead"],
+      expectedTargetHead: input["expectedTargetHead"],
+    },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_23Request = Parameters<RawClient["server.orchestration"]["orchestration.integrate"]>[0]
+type Endpoint18_23Input = {
+  readonly runID: Endpoint18_23Request["params"]["runID"]
+  readonly location?: Endpoint18_23Request["query"]["location"]
+  readonly action: Endpoint18_23Request["payload"]["action"]
+  readonly branch?: Endpoint18_23Request["payload"]["branch"]
+  readonly targetBranch?: Endpoint18_23Request["payload"]["targetBranch"]
+  readonly remote?: Endpoint18_23Request["payload"]["remote"]
+  readonly remoteBranch?: Endpoint18_23Request["payload"]["remoteBranch"]
+  readonly baseBranch?: Endpoint18_23Request["payload"]["baseBranch"]
+  readonly history?: Endpoint18_23Request["payload"]["history"]
+  readonly mergeStrategy?: Endpoint18_23Request["payload"]["mergeStrategy"]
+  readonly commitMessage?: Endpoint18_23Request["payload"]["commitMessage"]
+  readonly draft?: Endpoint18_23Request["payload"]["draft"]
+  readonly reviewers?: Endpoint18_23Request["payload"]["reviewers"]
+  readonly confirmDefaultPush?: Endpoint18_23Request["payload"]["confirmDefaultPush"]
+  readonly confirmDiscard?: Endpoint18_23Request["payload"]["confirmDiscard"]
+  readonly expectedHead: Endpoint18_23Request["payload"]["expectedHead"]
+  readonly expectedTargetHead?: Endpoint18_23Request["payload"]["expectedTargetHead"]
+}
+const Endpoint18_23 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_23Input) =>
+  raw["orchestration.integrate"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+    payload: {
+      action: input["action"],
+      branch: input["branch"],
+      targetBranch: input["targetBranch"],
+      remote: input["remote"],
+      remoteBranch: input["remoteBranch"],
+      baseBranch: input["baseBranch"],
+      history: input["history"],
+      mergeStrategy: input["mergeStrategy"],
+      commitMessage: input["commitMessage"],
+      draft: input["draft"],
+      reviewers: input["reviewers"],
+      confirmDefaultPush: input["confirmDefaultPush"],
+      confirmDiscard: input["confirmDiscard"],
+      expectedHead: input["expectedHead"],
+      expectedTargetHead: input["expectedTargetHead"],
+    },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_24Request = Parameters<RawClient["server.orchestration"]["orchestration.retryIntegration"]>[0]
+type Endpoint18_24Input = {
+  readonly runID: Endpoint18_24Request["params"]["runID"]
+  readonly integrationID: Endpoint18_24Request["params"]["integrationID"]
+  readonly location?: Endpoint18_24Request["query"]["location"]
+}
+const Endpoint18_24 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_24Input) =>
+  raw["orchestration.retryIntegration"]({
+    params: { runID: input["runID"], integrationID: input["integrationID"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_25Request = Parameters<RawClient["server.orchestration"]["orchestration.followUp"]>[0]
+type Endpoint18_25Input = {
+  readonly runID: Endpoint18_25Request["params"]["runID"]
+  readonly location?: Endpoint18_25Request["query"]["location"]
+  readonly objective: Endpoint18_25Request["payload"]["objective"]
+  readonly context?: Endpoint18_25Request["payload"]["context"]
+}
+const Endpoint18_25 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_25Input) =>
+  raw["orchestration.followUp"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"] },
+    payload: { objective: input["objective"], context: input["context"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_26Request = Parameters<RawClient["server.orchestration"]["orchestration.steerFollowUp"]>[0]
+type Endpoint18_26Input = {
+  readonly runID: Endpoint18_26Request["params"]["runID"]
+  readonly turnID: Endpoint18_26Request["params"]["turnID"]
+  readonly location?: Endpoint18_26Request["query"]["location"]
+}
+const Endpoint18_26 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_26Input) =>
+  raw["orchestration.steerFollowUp"]({
+    params: { runID: input["runID"], turnID: input["turnID"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_27Request = Parameters<RawClient["server.orchestration"]["orchestration.reviewPacket"]>[0]
+type Endpoint18_27Input = {
+  readonly runID: Endpoint18_27Request["params"]["runID"]
+  readonly taskID: Endpoint18_27Request["params"]["taskID"]
+  readonly location?: Endpoint18_27Request["query"]["location"]
+}
+const Endpoint18_27 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_27Input) =>
+  raw["orchestration.reviewPacket"]({
+    params: { runID: input["runID"], taskID: input["taskID"] },
+    query: { location: input["location"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_28Request = Parameters<RawClient["server.orchestration"]["orchestration.labelTriage"]>[0]
+type Endpoint18_28Input = {
+  readonly runID: Endpoint18_28Request["params"]["runID"]
+  readonly taskID: Endpoint18_28Request["params"]["taskID"]
+  readonly location?: Endpoint18_28Request["query"]["location"]
+  readonly decision: Endpoint18_28Request["payload"]["decision"]
+  readonly note?: Endpoint18_28Request["payload"]["note"]
+}
+const Endpoint18_28 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_28Input) =>
+  raw["orchestration.labelTriage"]({
+    params: { runID: input["runID"], taskID: input["taskID"] },
+    query: { location: input["location"] },
+    payload: { decision: input["decision"], note: input["note"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_29Request = Parameters<RawClient["server.orchestration"]["orchestration.accept"]>[0]
+type Endpoint18_29Input = {
+  readonly runID: Endpoint18_29Request["params"]["runID"]
+  readonly taskID: Endpoint18_29Request["params"]["taskID"]
+  readonly location?: Endpoint18_29Request["query"]["location"]
+  readonly note?: Endpoint18_29Request["payload"]["note"]
+}
+const Endpoint18_29 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_29Input) =>
   raw["orchestration.accept"]({
     params: { runID: input["runID"], taskID: input["taskID"] },
     query: { location: input["location"] },
     payload: { note: input["note"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_8Request = Parameters<RawClient["server.orchestration"]["orchestration.reject"]>[0]
-type Endpoint18_8Input = {
-  readonly runID: Endpoint18_8Request["params"]["runID"]
-  readonly taskID: Endpoint18_8Request["params"]["taskID"]
-  readonly location?: Endpoint18_8Request["query"]["location"]
-  readonly note?: Endpoint18_8Request["payload"]["note"]
+type Endpoint18_30Request = Parameters<RawClient["server.orchestration"]["orchestration.reject"]>[0]
+type Endpoint18_30Input = {
+  readonly runID: Endpoint18_30Request["params"]["runID"]
+  readonly taskID: Endpoint18_30Request["params"]["taskID"]
+  readonly location?: Endpoint18_30Request["query"]["location"]
+  readonly note?: Endpoint18_30Request["payload"]["note"]
 }
-const Endpoint18_8 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_8Input) =>
+const Endpoint18_30 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_30Input) =>
   raw["orchestration.reject"]({
     params: { runID: input["runID"], taskID: input["taskID"] },
     query: { location: input["location"] },
     payload: { note: input["note"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_9Request = Parameters<RawClient["server.orchestration"]["orchestration.retry"]>[0]
-type Endpoint18_9Input = {
-  readonly runID: Endpoint18_9Request["params"]["runID"]
-  readonly taskID: Endpoint18_9Request["params"]["taskID"]
-  readonly location?: Endpoint18_9Request["query"]["location"]
+type Endpoint18_31Request = Parameters<RawClient["server.orchestration"]["orchestration.reopen"]>[0]
+type Endpoint18_31Input = {
+  readonly runID: Endpoint18_31Request["params"]["runID"]
+  readonly taskID: Endpoint18_31Request["params"]["taskID"]
+  readonly location?: Endpoint18_31Request["query"]["location"]
+  readonly feedback: Endpoint18_31Request["payload"]["feedback"]
 }
-const Endpoint18_9 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_9Input) =>
+const Endpoint18_31 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_31Input) =>
+  raw["orchestration.reopen"]({
+    params: { runID: input["runID"], taskID: input["taskID"] },
+    query: { location: input["location"] },
+    payload: { feedback: input["feedback"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_32Request = Parameters<RawClient["server.orchestration"]["orchestration.answerRequest"]>[0]
+type Endpoint18_32Input = {
+  readonly runID: Endpoint18_32Request["params"]["runID"]
+  readonly requestID: Endpoint18_32Request["params"]["requestID"]
+  readonly location?: Endpoint18_32Request["query"]["location"]
+  readonly answer: Endpoint18_32Request["payload"]["answer"]
+}
+const Endpoint18_32 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_32Input) =>
+  raw["orchestration.answerRequest"]({
+    params: { runID: input["runID"], requestID: input["requestID"] },
+    query: { location: input["location"] },
+    payload: { answer: input["answer"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_33Request = Parameters<RawClient["server.orchestration"]["orchestration.retry"]>[0]
+type Endpoint18_33Input = {
+  readonly runID: Endpoint18_33Request["params"]["runID"]
+  readonly taskID: Endpoint18_33Request["params"]["taskID"]
+  readonly location?: Endpoint18_33Request["query"]["location"]
+}
+const Endpoint18_33 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_33Input) =>
   raw["orchestration.retry"]({
     params: { runID: input["runID"], taskID: input["taskID"] },
     query: { location: input["location"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_10Request = Parameters<RawClient["server.orchestration"]["orchestration.routeProfiles"]>[0]
-type Endpoint18_10Input = { readonly location?: Endpoint18_10Request["query"]["location"] }
-const Endpoint18_10 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_10Input) =>
+type Endpoint18_34Request = Parameters<RawClient["server.orchestration"]["orchestration.routeProfiles"]>[0]
+type Endpoint18_34Input = { readonly location?: Endpoint18_34Request["query"]["location"] }
+const Endpoint18_34 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_34Input) =>
   raw["orchestration.routeProfiles"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_11Request = Parameters<RawClient["server.orchestration"]["orchestration.resolveRoute"]>[0]
-type Endpoint18_11Input = {
-  readonly location?: Endpoint18_11Request["query"]["location"]
-  readonly profile?: Endpoint18_11Request["payload"]["profile"]
+type Endpoint18_35Request = Parameters<RawClient["server.orchestration"]["orchestration.resolveRoute"]>[0]
+type Endpoint18_35Input = {
+  readonly location?: Endpoint18_35Request["query"]["location"]
+  readonly profile?: Endpoint18_35Request["payload"]["profile"]
+  readonly capabilityTier?: Endpoint18_35Request["payload"]["capabilityTier"]
 }
-const Endpoint18_11 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_11Input) =>
+const Endpoint18_35 = (raw: RawClient["server.orchestration"]) => (input?: Endpoint18_35Input) =>
   raw["orchestration.resolveRoute"]({
     query: { location: input?.["location"] },
-    payload: { profile: input?.["profile"] },
+    payload: { profile: input?.["profile"], capabilityTier: input?.["capabilityTier"] },
   }).pipe(Effect.mapError(mapClientError))
 
-type Endpoint18_12Request = Parameters<RawClient["server.orchestration"]["orchestration.get"]>[0]
-type Endpoint18_12Input = {
-  readonly runID: Endpoint18_12Request["params"]["runID"]
-  readonly location?: Endpoint18_12Request["query"]["location"]
+type Endpoint18_36Request = Parameters<RawClient["server.orchestration"]["orchestration.history"]>[0]
+type Endpoint18_36Input = {
+  readonly runID: Endpoint18_36Request["params"]["runID"]
+  readonly location?: Endpoint18_36Request["query"]["location"]
+  readonly limit?: Endpoint18_36Request["query"]["limit"]
+  readonly after?: Endpoint18_36Request["query"]["after"]
 }
-const Endpoint18_12 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_12Input) =>
+const Endpoint18_36 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_36Input) =>
+  raw["orchestration.history"]({
+    params: { runID: input["runID"] },
+    query: { location: input["location"], limit: input["limit"], after: input["after"] },
+  }).pipe(Effect.mapError(mapClientError))
+
+type Endpoint18_37Request = Parameters<RawClient["server.orchestration"]["orchestration.events"]>[0]
+type Endpoint18_37Input = {
+  readonly runID: Endpoint18_37Request["params"]["runID"]
+  readonly location?: Endpoint18_37Request["query"]["location"]
+  readonly after?: Endpoint18_37Request["query"]["after"]
+}
+const Endpoint18_37 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_37Input) =>
+  Stream.unwrap(
+    raw["orchestration.events"]({
+      params: { runID: input["runID"] },
+      query: { location: input["location"], after: input["after"] },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((stream) => stream.pipe(Stream.mapError(mapClientError))),
+    ),
+  )
+
+type Endpoint18_38Request = Parameters<RawClient["server.orchestration"]["orchestration.get"]>[0]
+type Endpoint18_38Input = {
+  readonly runID: Endpoint18_38Request["params"]["runID"]
+  readonly location?: Endpoint18_38Request["query"]["location"]
+}
+const Endpoint18_38 = (raw: RawClient["server.orchestration"]) => (input: Endpoint18_38Input) =>
   raw["orchestration.get"]({ params: { runID: input["runID"] }, query: { location: input["location"] } }).pipe(
     Effect.mapError(mapClientError),
   )
 
 const adaptGroup18 = (raw: RawClient["server.orchestration"]) => ({
   list: Endpoint18_0(raw),
-  create: Endpoint18_1(raw),
-  capacity: Endpoint18_2(raw),
-  addTask: Endpoint18_3(raw),
-  addDependency: Endpoint18_4(raw),
-  start: Endpoint18_5(raw),
-  cancel: Endpoint18_6(raw),
-  accept: Endpoint18_7(raw),
-  reject: Endpoint18_8(raw),
-  retry: Endpoint18_9(raw),
-  routeProfiles: Endpoint18_10(raw),
-  resolveRoute: Endpoint18_11(raw),
-  get: Endpoint18_12(raw),
+  summaries: Endpoint18_1(raw),
+  create: Endpoint18_2(raw),
+  submit: Endpoint18_3(raw),
+  policies: Endpoint18_4(raw),
+  capacity: Endpoint18_5(raw),
+  jevStatus: Endpoint18_6(raw),
+  testJev: Endpoint18_7(raw),
+  verifyCheckPreset: Endpoint18_8(raw),
+  resources: Endpoint18_9(raw),
+  compareJudges: Endpoint18_10(raw),
+  comparePolicies: Endpoint18_11(raw),
+  labels: Endpoint18_12(raw),
+  calibration: Endpoint18_13(raw),
+  addTask: Endpoint18_14(raw),
+  proposePlan: Endpoint18_15(raw),
+  generatePlan: Endpoint18_16(raw),
+  applyPlan: Endpoint18_17(raw),
+  addDependency: Endpoint18_18(raw),
+  start: Endpoint18_19(raw),
+  cancel: Endpoint18_20(raw),
+  integrationTargets: Endpoint18_21(raw),
+  integrationPreflight: Endpoint18_22(raw),
+  integrate: Endpoint18_23(raw),
+  retryIntegration: Endpoint18_24(raw),
+  followUp: Endpoint18_25(raw),
+  steerFollowUp: Endpoint18_26(raw),
+  reviewPacket: Endpoint18_27(raw),
+  labelTriage: Endpoint18_28(raw),
+  accept: Endpoint18_29(raw),
+  reject: Endpoint18_30(raw),
+  reopen: Endpoint18_31(raw),
+  answerRequest: Endpoint18_32(raw),
+  retry: Endpoint18_33(raw),
+  routeProfiles: Endpoint18_34(raw),
+  resolveRoute: Endpoint18_35(raw),
+  history: Endpoint18_36(raw),
+  events: Endpoint18_37(raw),
+  get: Endpoint18_38(raw),
 })
 
 const adaptClient = (raw: RawClient) => ({

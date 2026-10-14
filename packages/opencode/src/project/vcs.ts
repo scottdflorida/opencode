@@ -13,7 +13,13 @@ const MAX_PATCH_BYTES = 10_000_000
 const MAX_TOTAL_PATCH_BYTES = 10_000_000
 type DiffOptions = {
   readonly context?: number
+  readonly base?: string
+  readonly head?: string
 }
+
+export class DiffRangeError extends Schema.TaggedErrorClass<DiffRangeError>()("VcsDiffRangeError", {
+  message: Schema.String,
+}) {}
 
 const emptyPatch = (file: string) => formatPatch(structuredPatch(file, file, "", "", "", "", { context: 0 }))
 
@@ -232,7 +238,7 @@ const track = Effect.fnUntraced(function* (
   return yield* diffAgainstRef(git, cwd, ref, options)
 })
 
-export const Mode = Schema.Literals(["git", "branch"])
+export const Mode = Schema.Literals(["git", "branch", "range"])
 export type Mode = Schema.Schema.Type<typeof Mode>
 
 export const Event = VcsEvent
@@ -283,7 +289,7 @@ export interface Interface {
   readonly branch: () => Effect.Effect<string | undefined>
   readonly defaultBranch: () => Effect.Effect<string | undefined>
   readonly status: () => Effect.Effect<FileStatus[]>
-  readonly diff: (mode: Mode, options?: DiffOptions) => Effect.Effect<FileDiff[]>
+  readonly diff: (mode: Mode, options?: DiffOptions) => Effect.Effect<FileDiff[], DiffRangeError>
   readonly diffRaw: () => Effect.Effect<string>
   readonly apply: (input: ApplyInput) => Effect.Effect<ApplyResult, PatchApplyError>
 }
@@ -374,6 +380,58 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
         const value = yield* InstanceState.get(state)
         const ctx = yield* InstanceState.context
         if (ctx.project.vcs !== "git") return []
+        if (mode === "range") {
+          if (!options?.base || !options.head)
+            return yield* new DiffRangeError({ message: "A base and head ref are required for a range diff" })
+          const refs = yield* Effect.forEach([options.base, options.head], (ref) =>
+            git.run(["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`], {
+              cwd: ctx.directory,
+              maxOutputBytes: 256,
+            }),
+          )
+          if (refs.some((ref) => ref.exitCode !== 0 || !/^[0-9a-f]{40,64}\s*$/.test(ref.text())))
+            return yield* new DiffRangeError({ message: "The base or head ref is not a commit in this repository" })
+          const args = [refs[0]!.text().trim(), refs[1]!.text().trim(), "--", "."]
+          const [names, numbers, patches] = yield* Effect.all([
+            git.run(["diff", "--no-ext-diff", "--no-renames", "--name-status", "-z", ...args], {
+              cwd: ctx.directory,
+              maxOutputBytes: MAX_TOTAL_PATCH_BYTES,
+            }),
+            git.run(["diff", "--no-ext-diff", "--no-renames", "--numstat", "-z", ...args], {
+              cwd: ctx.directory,
+              maxOutputBytes: MAX_TOTAL_PATCH_BYTES,
+            }),
+            git.run([
+              "diff", "--patch", "--no-ext-diff", "--no-renames",
+              `--unified=${options.context ?? PATCH_CONTEXT_LINES}`, ...args,
+            ], { cwd: ctx.directory, maxOutputBytes: MAX_TOTAL_PATCH_BYTES }),
+          ])
+          if (names.exitCode !== 0 || numbers.exitCode !== 0 || patches.exitCode !== 0 || names.truncated || numbers.truncated)
+            return yield* new DiffRangeError({ message: "Unable to read the requested range diff" })
+          const entries = names.text().split("\0").filter(Boolean)
+          const stats = numbers.text().split("\0").filter(Boolean).flatMap((entry) => {
+            const [additions, deletions, file] = entry.split("\t")
+            return file ? [[file, { additions: Number(additions) || 0, deletions: Number(deletions) || 0 }] as const] : []
+          })
+          const patch = splitGitPatch({ text: patches.text(), truncated: patches.truncated }).reduce((map, chunk) => {
+            const file = fileFromPatchChunk(chunk)
+            if (file) map.set(file, (map.get(file) ?? "") + chunk)
+            return map
+          }, new Map<string, string>())
+          const count = new Map(stats)
+          return entries.flatMap((code, index) => {
+            if (index % 2) return []
+            const file = entries[index + 1]
+            if (!file) return []
+            return [{
+              file,
+              patch: patch.get(file) ?? emptyPatch(file),
+              additions: count.get(file)?.additions ?? 0,
+              deletions: count.get(file)?.deletions ?? 0,
+              status: code.startsWith("A") ? "added" as const : code.startsWith("D") ? "deleted" as const : "modified" as const,
+            }]
+          })
+        }
         if (mode === "git") {
           return yield* track(git, ctx.directory, (yield* git.hasHead(ctx.directory)) ? "HEAD" : undefined, options)
         }

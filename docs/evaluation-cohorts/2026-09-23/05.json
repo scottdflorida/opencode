@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a58e001FagVBrNatPWpq9",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Preserve FIFO work queue order",
+    "description": "In packages/opencode/src/util/queue.ts, work with concurrency 1 should visit input items in order; a concurrency below one must reject rather than silently skip work. Add focused coverage for both behaviors while preserving parallel execution for valid concurrency.",
+    "routeProfile": "cohort",
+    "capabilityTier": "complex",
+    "checks": [
+      {
+        "name": "work-order",
+        "command": "bun -e 'import { work } from \"./packages/opencode/src/util/queue.ts\"; const seen: number[] = []; await work(1, [1,2,3], async (x) => { seen.push(x) }); if (seen.join(\",\") !== \"1,2,3\") process.exit(1); try { await work(0, [1], async () => {}); process.exit(1) } catch (error) { if (!(error instanceof RangeError)) process.exit(1) }'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463822,
+      "updated": 1790159540258
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd26bae001JEqK235f4JV77y",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a58e001FagVBrNatPWpq9",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-complex",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bae001JEqK235f4JV77y"
+    },
+    "time": {
+      "created": 1790159514542,
+      "updated": 1790159540257,
+      "completed": 1790159540257
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd26baf001IQU1I2rzR4MwOy",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a58e001FagVBrNatPWpq9",
+    "attemptID": "attempt_0cdd26bae001JEqK235f4JV77y",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159463859,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159514541,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159463859,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159505775,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 6886047744,
+          "cpuCount": 18,
+          "load1": 4.3837890625,
+          "load5": 4.166015625,
+          "load15": 3.828125
+        }
+      },
+      "requestedTier": "complex",
+      "selected": {
+        "id": "codex-luna-complex",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [
+        {
+          "candidateID": "codex-luna-routine",
+          "code": "tier_mismatch",
+          "message": "Candidate does not serve complex"
+        }
+      ],
+      "capacityCapturedAt": 1790159463859
+    },
+    "time": 1790159514543
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd2d0200018Ql820TK0488Yh",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a58e001FagVBrNatPWpq9",
+      "attemptID": "attempt_0cdd26bae001JEqK235f4JV77y",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd2-6f13-7521-ab39-5f7334deba7c",
+        "exitCode": 0,
+        "latencyMs": 24714,
+        "inputTokens": 111444,
+        "cachedInputTokens": 98816,
+        "outputTokens": 884,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159540256
+    },
+    {
+      "id": "eval_0cdd2d021001Qr9ib2CTJC9MHc",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a58e001FagVBrNatPWpq9",
+      "attemptID": "attempt_0cdd26bae001JEqK235f4JV77y",
+      "kind": "check:work-order",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { work } from \"./packages/opencode/src/util/queue.ts\"; const seen: number[] = []; await work(1, [1,2,3], async (x) => { seen.push(x) }); if (seen.join(\",\") !== \"1,2,3\") process.exit(1); try { await work(0, [1], async () => {}); process.exit(1) } catch (error) { if (!(error instanceof RangeError)) process.exit(1) }'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159540257
+    },
+    {
+      "id": "eval_0cdd2d0210036Dh5wqdrLINneq",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a58e001FagVBrNatPWpq9",
+      "attemptID": "attempt_0cdd26bae001JEqK235f4JV77y",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bae001JEqK235f4JV77y",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd26bae001JEqK235f4JV77y",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 1
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/opencode/src/util/queue.ts b/packages/opencode/src/util/queue.ts\nindex a1af53fe8..0bc213823 100644\n--- a/packages/opencode/src/util/queue.ts\n+++ b/packages/opencode/src/util/queue.ts\n@@ -19,11 +19,12 @@ export class AsyncQueue<T> implements AsyncIterable<T> {\n }\n \n export async function work<T>(concurrency: number, items: T[], fn: (item: T) => Promise<void>) {\n+  if (concurrency < 1) throw new RangeError(\"Concurrency must be at least 1\")\n   const pending = [...items]\n   await Promise.all(\n     Array.from({ length: concurrency }, async () => {\n       while (true) {\n-        const item = pending.pop()\n+        const item = pending.shift()\n         if (item === undefined) return\n         await fn(item)\n       }\n\ndiff --git a/packages/opencode/test/util/queue.test.ts b/packages/opencode/test/util/queue.test.ts\nnew file mode 100644\nindex 000000000..d4758c922\n--- /dev/null\n+++ b/packages/opencode/test/util/queue.test.ts\n@@ -0,0 +1,18 @@\n+import { describe, expect, test } from \"bun:test\"\n+import { work } from \"@/util/queue\"\n+\n+describe(\"work\", () => {\n+  test(\"processes items in input order with concurrency one\", async () => {\n+    const seen: number[] = []\n+\n+    await work(1, [1, 2, 3], async (item) => {\n+      seen.push(item)\n+    })\n+\n+    expect(seen).toEqual([1, 2, 3])\n+  })\n+\n+  test(\"rejects concurrency below one\", async () => {\n+    await expect(work(0, [1], async () => {})).rejects.toThrow(\"Concurrency must be at least 1\")\n+  })\n+})\n",
+        "truncated": false
+      },
+      "time": 1790159540257
+    }
+  ]
+}

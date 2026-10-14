@@ -1,0 +1,248 @@
+{
+  "run": {
+    "id": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "projectID": "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750",
+    "objective": "Collect a 10-task blind Jev evaluation cohort on bounded OpenCode maintenance changes from source commit 19bcead23 in a disposable clone.",
+    "status": "active",
+    "source": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/source"
+    },
+    "time": {
+      "created": 1790159463802,
+      "updated": 1790159463847
+    }
+  },
+  "task": {
+    "id": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "title": "Retry failed lazy initialization",
+    "description": "In packages/core/src/util/lazy.ts, a factory that throws must be attempted again on the next call. Once it succeeds, cache the result. Add a focused test of the throw, retry, and cache sequence.",
+    "routeProfile": "cohort",
+    "capabilityTier": "routine",
+    "checks": [
+      {
+        "name": "lazy-retry",
+        "command": "bun -e 'import { lazy } from \"./packages/core/src/util/lazy.ts\"; let calls = 0; const value = lazy(() => { calls++; if (calls === 1) throw Error(\"transient\"); return 7 }); try { value() } catch {} if (value() !== 7 || value() !== 7 || calls !== 2) process.exit(1)'"
+      }
+    ],
+    "status": "awaiting_review",
+    "time": {
+      "created": 1790159463815,
+      "updated": 1790159511357
+    }
+  },
+  "attempt": {
+    "id": "attempt_0cdd2108c001X9M2eXn6SLWpjq",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+    "status": "succeeded",
+    "candidate": {
+      "id": "codex-luna-routine",
+      "type": "harness",
+      "harnessID": "codex",
+      "modelID": "gpt-6-luna",
+      "effort": "low"
+    },
+    "location": {
+      "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2108c001X9M2eXn6SLWpjq"
+    },
+    "time": {
+      "created": 1790159491212,
+      "updated": 1790159511355,
+      "completed": 1790159511355
+    }
+  },
+  "routeDecision": {
+    "id": "route_0cdd2108d001NYCrYf7Wd1CPIN",
+    "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+    "taskID": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+    "attemptID": "attempt_0cdd2108c001X9M2eXn6SLWpjq",
+    "resolution": {
+      "status": "selected",
+      "profile": "cohort",
+      "profileSnapshot": {
+        "name": "cohort",
+        "unknownCapacity": "wait",
+        "exhausted": "wait_until_soonest_reset",
+        "maxCapacityAgeSeconds": 300,
+        "candidates": [
+          {
+            "candidate": {
+              "id": "codex-luna-routine",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "routine",
+            "disabled": false,
+            "requirements": []
+          },
+          {
+            "candidate": {
+              "id": "codex-luna-complex",
+              "type": "harness",
+              "harnessID": "codex",
+              "modelID": "gpt-6-luna",
+              "effort": "low"
+            },
+            "capabilityTier": "complex",
+            "disabled": false,
+            "requirements": []
+          }
+        ]
+      },
+      "capacitySnapshot": {
+        "schema": 1,
+        "source": "usagepool",
+        "status": "unavailable",
+        "capturedAt": 1790159463859,
+        "providers": [],
+        "meters": [],
+        "diagnostic": "command_failed"
+      },
+      "harnessSnapshot": {
+        "schema": 1,
+        "source": "host",
+        "capturedAt": 1790159295609,
+        "harnesses": [
+          {
+            "id": "codex",
+            "state": "available",
+            "version": "codex-cli 0.156.0"
+          },
+          {
+            "id": "claude",
+            "state": "available",
+            "version": "2.1.280 (Claude Code)"
+          },
+          {
+            "id": "cursor",
+            "state": "unsupported"
+          },
+          {
+            "id": "copilot",
+            "state": "unsupported"
+          }
+        ]
+      },
+      "resourceObservation": {
+        "schema": 1,
+        "capturedAt": 1790159491211,
+        "quota": {
+          "schema": 1,
+          "source": "usagepool",
+          "status": "unavailable",
+          "capturedAt": 1790159463859,
+          "providers": [],
+          "meters": [],
+          "diagnostic": "command_failed"
+        },
+        "host": {
+          "schema": 1,
+          "source": "host",
+          "capturedAt": 1790159490773,
+          "platform": "darwin",
+          "architecture": "arm64",
+          "totalMemoryBytes": 68719476736,
+          "freeMemoryBytes": 7562625024,
+          "cpuCount": 18,
+          "load1": 4.4931640625,
+          "load5": 4.17529296875,
+          "load15": 3.8251953125
+        }
+      },
+      "requestedTier": "routine",
+      "selected": {
+        "id": "codex-luna-routine",
+        "type": "harness",
+        "harnessID": "codex",
+        "modelID": "gpt-6-luna",
+        "effort": "low"
+      },
+      "rejected": [],
+      "capacityCapturedAt": 1790159463859
+    },
+    "time": 1790159491213
+  },
+  "evaluations": [
+    {
+      "id": "eval_0cdd25f39002afOVqvmJwVEC54",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+      "attemptID": "attempt_0cdd2108c001X9M2eXn6SLWpjq",
+      "kind": "harness:codex",
+      "status": "passed",
+      "evidence": {
+        "harness": "codex",
+        "version": "codex-cli 0.156.0",
+        "model": "gpt-6-luna",
+        "effort": "low",
+        "sandbox": "workspace-write",
+        "approval": "auto-review",
+        "userConfig": "ignored",
+        "threadID": "01a0cdd2-13d9-74b2-a6f4-43ff41135d80",
+        "exitCode": 0,
+        "latencyMs": 18853,
+        "inputTokens": 67255,
+        "cachedInputTokens": 58368,
+        "outputTokens": 717,
+        "reasoningOutputTokens": 0,
+        "outputTruncated": false,
+        "errorTruncated": false
+      },
+      "time": 1790159511353
+    },
+    {
+      "id": "eval_0cdd25f3a001MiI4Wzrtl9eCHl",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+      "attemptID": "attempt_0cdd2108c001X9M2eXn6SLWpjq",
+      "kind": "check:lazy-retry",
+      "status": "passed",
+      "evidence": {
+        "command": "bun -e 'import { lazy } from \"./packages/core/src/util/lazy.ts\"; let calls = 0; const value = lazy(() => { calls++; if (calls === 1) throw Error(\"transient\"); return 7 }); try { value() } catch {} if (value() !== 7 || value() !== 7 || calls !== 2) process.exit(1)'",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "truncated": false,
+        "baseline": {
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "",
+          "truncated": false
+        }
+      },
+      "time": 1790159511354
+    },
+    {
+      "id": "eval_0cdd25f3b00109eoXCyw324M6U",
+      "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+      "taskID": "task_0cdd1a587001lDZ8MKxcoSVb5L",
+      "attemptID": "attempt_0cdd2108c001X9M2eXn6SLWpjq",
+      "kind": "workspace",
+      "status": "passed",
+      "evidence": {
+        "directory": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2108c001X9M2eXn6SLWpjq",
+        "git": {
+          "worktree": "/private/tmp/opencode-jev-cohort.G0rOK9/data/opencode/orchestration/run_0cdd1a579001Q642lsIQRqmhc1/attempt_0cdd2108c001X9M2eXn6SLWpjq",
+          "head": "8a48adbf38f11fd2a672a1694f5b5e603d9b16f1",
+          "remoteNames": [
+            "origin"
+          ],
+          "status": {
+            "changed": 2,
+            "staged": 0,
+            "unstaged": 1,
+            "untracked": 1
+          },
+          "statusTruncated": false,
+          "remotesTruncated": false
+        },
+        "patch": "diff --git a/packages/core/src/util/lazy.ts b/packages/core/src/util/lazy.ts\nindex 935ebe0f9..ce9cab18c 100644\n--- a/packages/core/src/util/lazy.ts\n+++ b/packages/core/src/util/lazy.ts\n@@ -4,8 +4,8 @@ export function lazy<T>(fn: () => T) {\n \n   return (): T => {\n     if (loaded) return value as T\n-    loaded = true\n     value = fn()\n+    loaded = true\n     return value as T\n   }\n }\n\ndiff --git a/packages/core/test/util/lazy.test.ts b/packages/core/test/util/lazy.test.ts\nnew file mode 100644\nindex 000000000..7dc9fc345\n--- /dev/null\n+++ b/packages/core/test/util/lazy.test.ts\n@@ -0,0 +1,20 @@\n+import { describe, expect, test } from \"bun:test\"\n+import { lazy } from \"../../src/util/lazy\"\n+\n+describe(\"util.lazy\", () => {\n+  test(\"retries after a throw and caches the first successful value\", () => {\n+    let attempts = 0\n+    const get = lazy(() => {\n+      attempts++\n+      if (attempts === 1) throw new Error(\"not ready\")\n+      return { ready: true }\n+    })\n+\n+    expect(() => get()).toThrow(\"not ready\")\n+    const value = get()\n+\n+    expect(value).toEqual({ ready: true })\n+    expect(get()).toBe(value)\n+    expect(attempts).toBe(2)\n+  })\n+})\n",
+        "truncated": false
+      },
+      "time": 1790159511355
+    }
+  ]
+}

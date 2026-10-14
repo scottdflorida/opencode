@@ -1227,6 +1227,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       onAbort: props.onAbort,
       onSubmit: props.onSubmit,
       model: props.controls.model.selection,
+      orchestration: props.controls.orchestration,
     })
 
   const handleKeyDown = (event: KeyboardEvent) => {

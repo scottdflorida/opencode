@@ -4,7 +4,8 @@ Telemetry should answer why the system acted, how much the action cost, and whet
 
 ## Event families
 
-- run created, started, suspended, resumed, completed, or cancelled
+- run created, turn started, clarifying, delivered, suspended, resumed, failed, or cancelled
+- plan proposed, applied, or replanned
 - task added, dependency changed, ready, blocked, or completed
 - attempt created, started, interrupted, completed, or abandoned
 - workspace created, adopted, inspected, or released
@@ -12,8 +13,13 @@ Telemetry should answer why the system acted, how much the action cost, and whet
 - route considered, rejected, selected, or overridden
 - model or harness execution started and completed
 - evaluator started and completed
-- judgment requested, validated, rejected, or timed out
-- review requested, accepted, rejected, or revised
+- judgment requested, validated, rejected, or timed out, with its arm and whether it was authoritative
+- attempt accepted, returned with feedback, or merged into the run branch
+- reassignment decided, with its legal options and chooser
+- human request opened, answered, or withdrawn
+- human override recorded
+- delivery reviewed and summarized
+- integration step started, completed, or failed
 
 ## Common fields
 
@@ -27,16 +33,12 @@ Prompts, source excerpts, command output, and harness transcripts can contain se
 
 Credentials and provider authentication material never enter telemetry. Capacity records contain only normalized usage, state, reset time, and observation metadata.
 
-## Mission-control views
+## App views
 
-The initial UI should show:
+The [UI](./ui.md) defines where this evidence appears:
 
-- run progress and dependency state
-- active and suspended attempts
-- workspace and Session links
-- route choice and rejected alternatives
-- latest capacity observations and freshness
-- deterministic check output
-- pending human decisions
-
-Historical comparison and optimizer dashboards can follow after the event vocabulary is stable.
+- milestones in the run Session timeline
+- per-attempt evidence in the Run side-panel tab
+- open requests in docks and Home's "Needs you" group
+- capacity in the status popover
+- judge and policy comparisons in Lab

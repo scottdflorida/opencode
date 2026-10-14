@@ -1,0 +1,19 @@
+{
+  "runID": "run_0cdd1a579001Q642lsIQRqmhc1",
+  "reviewer": "Codex assistant",
+  "method": "blind packet review",
+  "recordedAt": "2026-09-23T10:44:52Z",
+  "independentHumanLabels": false,
+  "labels": [
+    { "case": "01", "decision": "looks_ready", "reason": "The boundary fix matches the requested behavior and adds focused coverage." },
+    { "case": "02", "decision": "looks_ready", "reason": "Extension parsing now uses the basename and handles dotfiles and extensionless paths." },
+    { "case": "03", "decision": "looks_ready", "reason": "The cache flag is set only after successful initialization, and the throw-retry sequence is covered." },
+    { "case": "04", "decision": "looks_ready", "reason": "Invalid attempt counts reject before invoking the operation, with focused coverage." },
+    { "case": "05", "decision": "needs_attention", "reason": "Using Array.shift for every item makes the generic work helper quadratic for large queues; use an index or another constant-time FIFO approach." },
+    { "case": "06", "decision": "looks_ready", "reason": "The case-insensitive marker fix meets the requested behavior and preserves plain URL decoding." },
+    { "case": "07", "decision": "looks_ready", "reason": "MIME normalization is applied consistently to PDF, images, and the excluded image types." },
+    { "case": "08", "decision": "needs_attention", "reason": "The baseline already passes: shouldProxy lowercases no_proxy before comparison. The patch lowercases the URL host again without fixing a demonstrated defect." },
+    { "case": "09", "decision": "needs_attention", "reason": "The replacement text says harness execution is unavailable, which conflicts with the current worktree's Codex and Claude adapters. The source clone excluded those uncommitted changes, so the task premise was not valid for this checkout." },
+    { "case": "10", "decision": "looks_ready", "reason": "The package ownership and dependency direction match the repository boundaries and the change stays in documentation." }
+  ]
+}

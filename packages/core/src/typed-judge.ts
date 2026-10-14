@@ -3,16 +3,20 @@ export * as TypedJudge from "./typed-judge"
 import { Cause, Context, Duration, Effect, Exit, Layer, Option, Schema } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/unstable/http"
 import { TypedJudge as TypedJudgeSchema } from "@opencode-ai/schema/typed-judge"
+import { eq } from "drizzle-orm"
 import { Config } from "./config"
+import { Database } from "./database/database"
 import { makeLocationNode } from "./effect/app-node"
 import { httpClient } from "./effect/app-node-platform"
 import { collectBoundedResponseBody } from "./tool/http-body"
 import { Hash } from "./util/hash"
+import { TypedJudgeCacheTable } from "./typed-judge/sql"
 
 const DEFAULT_BASE_URL = "https://api.typesafe.ai"
 const DEFAULT_MODEL = "jev-latest"
 const QUESTION_ID = "decision"
 const MAX_RESPONSE_BYTES = 256 * 1024
+const DEFAULT_CACHE_TTL_SECONDS = 86_400
 
 const Probability = Schema.Finite.check(Schema.isBetween({ minimum: 0, maximum: 1 }))
 const Entry = Schema.Union([
@@ -54,6 +58,7 @@ const Request = Schema.Struct({
 export interface Interface {
   readonly choice: (
     input: TypedJudgeSchema.ChoiceRequest,
+    options?: { readonly authoritative?: boolean },
   ) => Effect.Effect<Option.Option<TypedJudgeSchema.ChoiceResult>>
 }
 
@@ -69,19 +74,28 @@ export const layerWith = (options: Options = {}) =>
     Effect.gen(function* () {
       const config = yield* Config.Service
       const http = yield* HttpClient.HttpClient
-      const cache = new Map<string, TypedJudgeSchema.ChoiceResult>()
+      const { db } = yield* Database.Service
 
-      const choice = Effect.fn("TypedJudge.choice")(function* (input: TypedJudgeSchema.ChoiceRequest) {
+      const choice = Effect.fn("TypedJudge.choice")(function* (
+        input: TypedJudgeSchema.ChoiceRequest,
+        callOptions?: { readonly authoritative?: boolean },
+      ) {
         const orchestration = Config.latest(yield* config.entries(), "orchestration")
         const settings = orchestration?.judge
-        if (settings?.mode !== "shadow") return Option.none()
+        if (settings?.mode !== "shadow" && !callOptions?.authoritative) return Option.none()
 
-        const model = settings.model ?? DEFAULT_MODEL
-        const requestDigest = digest(model, input)
-        const cached = cache.get(requestDigest)
-        if (cached)
+        const model = settings?.model ?? DEFAULT_MODEL
+        const baseURL = (settings?.base_url ?? DEFAULT_BASE_URL).replace(/\/$/, "")
+        const requestDigest = digest(baseURL, model, input)
+        const cached = yield* db
+          .select()
+          .from(TypedJudgeCacheTable)
+          .where(eq(TypedJudgeCacheTable.request_digest, requestDigest))
+          .get()
+          .pipe(Effect.orDie)
+        if (cached && cached.expires_at > Date.now())
           return Option.some({
-            ...cached,
+            ...cached.result,
             cached: true,
             latencyMs: 0,
             usage: undefined,
@@ -94,9 +108,7 @@ export const layerWith = (options: Options = {}) =>
           options.apiKey === undefined ? globalThis.process.env.TYPESAFE_API_KEY : (options.apiKey ?? undefined)
         if (!apiKey) return Option.some(failure("unavailable", model, requestDigest, 0, "missing_api_key"))
 
-        const request = yield* HttpClientRequest.post(
-          `${(settings.base_url ?? DEFAULT_BASE_URL).replace(/\/$/, "")}/v1/systemone`,
-        ).pipe(
+        const request = yield* HttpClientRequest.post(`${baseURL}/v1/systemone`).pipe(
           HttpClientRequest.acceptJson,
           HttpClientRequest.bearerToken(apiKey),
           HttpClientRequest.schemaBodyJson(Request)({
@@ -117,7 +129,7 @@ export const layerWith = (options: Options = {}) =>
           .execute(request)
           .pipe(
             Effect.timeoutOrElse({
-              duration: Duration.millis(settings.timeout_ms ?? 10_000),
+              duration: Duration.millis(settings?.timeout_ms ?? 10_000),
               orElse: () => Effect.fail("timed_out" as const),
             }),
             Effect.exit,
@@ -168,9 +180,33 @@ export const layerWith = (options: Options = {}) =>
           usage: {
             inputTokens: parsed.value.usage.input_tokens,
             outputTokens: parsed.value.usage.output_tokens,
+            estimatedCostUsd:
+              settings?.input_cost_per_million_usd !== undefined && settings.output_cost_per_million_usd !== undefined
+                ? (parsed.value.usage.input_tokens * settings.input_cost_per_million_usd +
+                    parsed.value.usage.output_tokens * settings.output_cost_per_million_usd) /
+                  1_000_000
+                : undefined,
           },
         }
-        cache.set(requestDigest, result)
+        const created = Date.now()
+        yield* db
+          .insert(TypedJudgeCacheTable)
+          .values({
+            request_digest: requestDigest,
+            result,
+            time_created: created,
+            expires_at: created + (settings?.cache_ttl_seconds ?? DEFAULT_CACHE_TTL_SECONDS) * 1_000,
+          })
+          .onConflictDoUpdate({
+            target: TypedJudgeCacheTable.request_digest,
+            set: {
+              result,
+              time_created: created,
+              expires_at: created + (settings?.cache_ttl_seconds ?? DEFAULT_CACHE_TTL_SECONDS) * 1_000,
+            },
+          })
+          .run()
+          .pipe(Effect.orDie)
         return Option.some(result)
       })
 
@@ -180,8 +216,8 @@ export const layerWith = (options: Options = {}) =>
 
 const layer = layerWith()
 
-function digest(model: string, input: TypedJudgeSchema.ChoiceRequest) {
-  return Hash.sha256(JSON.stringify({ provider: "jev", model, input }))
+function digest(baseURL: string, model: string, input: TypedJudgeSchema.ChoiceRequest) {
+  return Hash.sha256(JSON.stringify({ provider: "jev", baseURL, model, input }))
 }
 
 function validateRequest(input: TypedJudgeSchema.ChoiceRequest, model: string, requestDigest: string) {
@@ -218,4 +254,4 @@ function failure(
   }
 }
 
-export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, httpClient] })
+export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, Database.node, httpClient] })
